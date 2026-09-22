@@ -45,21 +45,12 @@ describe('InstanceTypeCreateForm', () => {
 
     expect(screen.getByRole('textbox', { name: 'Name' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Description' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'CPU cores' })).toHaveAttribute(
-      'inputmode',
-      'numeric',
-    );
-    expect(screen.getByRole('textbox', { name: 'Memory (GiB)' })).toHaveAttribute(
-      'inputmode',
-      'numeric',
-    );
+    expect(screen.getByRole('textbox', { name: 'CPU cores' })).toHaveAttribute('type', 'text');
+    expect(screen.getByRole('textbox', { name: 'Memory (GiB)' })).toHaveAttribute('type', 'text');
     expect(screen.getByText('GPU')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'PCI device selector' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Resource name' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'GPU count' })).toHaveAttribute(
-      'inputmode',
-      'numeric',
-    );
+    expect(screen.getByRole('textbox', { name: 'GPU count' })).toHaveAttribute('type', 'text');
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });

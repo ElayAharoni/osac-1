@@ -80,7 +80,6 @@ const InstanceTypeCreateForm = () => {
                   label={t('CPU cores')}
                   fieldId="instance-type-cores"
                   type="text"
-                  inputMode="numeric"
                   isRequired
                 />
                 <InputField
@@ -88,7 +87,6 @@ const InstanceTypeCreateForm = () => {
                   label={t('Memory (GiB)')}
                   fieldId="instance-type-memory-gib"
                   type="text"
-                  inputMode="numeric"
                   isRequired
                 />
                 <FormSection title={t('GPU')}>
@@ -97,7 +95,6 @@ const InstanceTypeCreateForm = () => {
                     label={t('GPU count')}
                     fieldId="instance-type-gpu-count"
                     type="text"
-                    inputMode="numeric"
                     helperText={t('Number of GPU devices of this type.')}
                   />
                   <InputField
