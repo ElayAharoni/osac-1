@@ -25,12 +25,14 @@ const renderForm = (overrides?: MockTransportOverrides) =>
     transportOverrides: overrides,
   });
 
+const getNumericInput = (name: string) => screen.getByRole('spinbutton', { name });
+
 const fillValidForm = async (user: ReturnType<typeof renderForm>['user']) => {
   await user.type(screen.getByRole('textbox', { name: 'Name' }), 'gp-small');
-  fireEvent.change(screen.getByRole('textbox', { name: 'CPU cores' }), {
+  fireEvent.change(getNumericInput('CPU cores'), {
     target: { value: '4' },
   });
-  fireEvent.change(screen.getByRole('textbox', { name: 'Memory (GiB)' }), {
+  fireEvent.change(getNumericInput('Memory (GiB)'), {
     target: { value: '16' },
   });
 };
@@ -45,12 +47,14 @@ describe('InstanceTypeCreateForm', () => {
 
     expect(screen.getByRole('textbox', { name: 'Name' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Description' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'CPU cores' })).toHaveAttribute('type', 'text');
-    expect(screen.getByRole('textbox', { name: 'Memory (GiB)' })).toHaveAttribute('type', 'text');
+    expect(getNumericInput('CPU cores')).toHaveAttribute('type', 'number');
+    expect(getNumericInput('Memory (GiB)')).toHaveAttribute('type', 'number');
     expect(screen.getByText('GPU')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'PCI device selector' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Resource name' })).toBeInTheDocument();
-    expect(screen.getByRole('textbox', { name: 'GPU count' })).toHaveAttribute('type', 'text');
+    expect(getNumericInput('GPU count')).toHaveAttribute('type', 'number');
+    expect(screen.getAllByRole('button', { name: 'Minus' })).toHaveLength(3);
+    expect(screen.getAllByRole('button', { name: 'Plus' })).toHaveLength(3);
     expect(screen.getByRole('button', { name: 'Create' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
   });
@@ -75,17 +79,16 @@ describe('InstanceTypeCreateForm', () => {
   it.each([
     ['blank', '', 'Cores are required'],
     ['decimal', '1.5', 'Must be a whole number'],
-    ['non-numeric', 'test', 'Must be a whole number'],
     ['zero', '0', 'Must be greater than zero'],
     ['negative', '-1', 'Must be greater than zero'],
   ])('shows a validation error for %s CPU cores', async (_label, cores, expectedMessage) => {
     const { user } = renderForm();
 
     await user.type(screen.getByRole('textbox', { name: 'Name' }), 'gp-small');
-    fireEvent.change(screen.getByRole('textbox', { name: 'CPU cores' }), {
+    fireEvent.change(getNumericInput('CPU cores'), {
       target: { value: cores },
     });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Memory (GiB)' }), {
+    fireEvent.change(getNumericInput('Memory (GiB)'), {
       target: { value: '16' },
     });
     await user.click(screen.getByRole('button', { name: 'Create' }));
@@ -98,17 +101,16 @@ describe('InstanceTypeCreateForm', () => {
   it.each([
     ['blank', '', 'Memory is required'],
     ['decimal', '1.5', 'Must be a whole number'],
-    ['non-numeric', 'test', 'Must be a whole number'],
     ['zero', '0', 'Must be greater than zero'],
     ['negative', '-1', 'Must be greater than zero'],
   ])('shows a validation error for %s Memory (GiB)', async (_label, memoryGib, expectedMessage) => {
     const { user } = renderForm();
 
     await user.type(screen.getByRole('textbox', { name: 'Name' }), 'gp-small');
-    fireEvent.change(screen.getByRole('textbox', { name: 'CPU cores' }), {
+    fireEvent.change(getNumericInput('CPU cores'), {
       target: { value: '4' },
     });
-    fireEvent.change(screen.getByRole('textbox', { name: 'Memory (GiB)' }), {
+    fireEvent.change(getNumericInput('Memory (GiB)'), {
       target: { value: memoryGib },
     });
     await user.click(screen.getByRole('button', { name: 'Create' }));
@@ -121,7 +123,6 @@ describe('InstanceTypeCreateForm', () => {
   it.each([
     ['blank', '', 'Required when configuring a GPU'],
     ['decimal', '1.5', 'Must be a whole number'],
-    ['non-numeric', 'test', 'Must be a whole number'],
     ['zero', '0', 'Must be greater than zero'],
     ['negative', '-1', 'Must be greater than zero'],
   ])('shows a validation error for %s GPU count', async (_label, count, expectedMessage) => {
@@ -130,7 +131,7 @@ describe('InstanceTypeCreateForm', () => {
     await fillValidForm(user);
     await user.type(screen.getByRole('textbox', { name: 'PCI device selector' }), '10DE:20B0');
     await user.type(screen.getByRole('textbox', { name: 'Resource name' }), 'nvidia.com/A100');
-    fireEvent.change(screen.getByRole('textbox', { name: 'GPU count' }), {
+    fireEvent.change(getNumericInput('GPU count'), {
       target: { value: count },
     });
     await user.click(screen.getByRole('button', { name: 'Create' }));
@@ -141,14 +142,14 @@ describe('InstanceTypeCreateForm', () => {
   });
 
   it.each(['CPU cores', 'Memory (GiB)', 'GPU count'])(
-    'shows non-numeric validation for %s when the field is touched',
+    'ignores non-numeric input for %s',
     async (fieldLabel) => {
       const { user } = renderForm();
 
-      await user.type(screen.getByRole('textbox', { name: fieldLabel }), 'test');
-      await user.tab();
+      const input = getNumericInput(fieldLabel);
+      await user.type(input, 'test');
 
-      expect(await screen.findByText('Must be a whole number')).toBeInTheDocument();
+      expect(input).toHaveValue(null);
     },
   );
 
@@ -162,7 +163,11 @@ describe('InstanceTypeCreateForm', () => {
       const { user } = renderForm();
 
       await user.type(screen.getByRole('textbox', { name: configuredField }), configuredValue);
-      await user.click(screen.getByRole('textbox', { name: touchedField }));
+      const touchedInput =
+        touchedField === 'GPU count'
+          ? getNumericInput(touchedField)
+          : screen.getByRole('textbox', { name: touchedField });
+      await user.click(touchedInput);
       await user.tab();
 
       expect(await screen.findByText('Required when configuring a GPU')).toBeInTheDocument();
@@ -237,7 +242,7 @@ describe('InstanceTypeCreateForm', () => {
       await fillValidForm(user);
       await user.type(screen.getByRole('textbox', { name: 'PCI device selector' }), '10DE:20B0');
       await user.type(screen.getByRole('textbox', { name: 'Resource name' }), 'nvidia.com/A100');
-      fireEvent.change(screen.getByRole('textbox', { name: 'GPU count' }), {
+      fireEvent.change(getNumericInput('GPU count'), {
         target: { value: '2' },
       });
       await user.click(screen.getByRole('button', { name: 'Create' }));
