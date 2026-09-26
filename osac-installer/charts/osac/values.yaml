@@ -188,8 +188,8 @@ aap:
     manifestSecret: "config-as-code-manifest-ig"
     secret: "config-as-code-ig"
     eeImage: ""
-    projectGitUri: ""
-    projectGitBranch: ""
+    projectGitUri: https://github.com/ElayAharoni/osac-1
+    projectGitBranch: 2d856a23bde4e87d492e6f30789923c3a3622537
     importAgentsEnabled: false
     importBcmAgentsEnabled: false
   importAgents:
