@@ -61,8 +61,6 @@ import {
   VolumesDeleteResponse,
   VolumesGetRequest,
   VolumesGetResponse,
-  VolumesUpdateRequest,
-  VolumesUpdateResponse,
 } from '@osac/types';
 import {
   Capabilities,
@@ -454,7 +452,6 @@ export type MockTransportOverrides = {
   ) => ExternalIPAttachmentsCreateResponse | Promise<ExternalIPAttachmentsCreateResponse>;
   onVolumeGet?: (req: VolumesGetRequest) => VolumesGetResponse | Promise<VolumesGetResponse>;
   onVolumeCreate?: (req: VolumesCreateRequest) => VolumesCreateResponse;
-  onVolumeUpdate?: (req: VolumesUpdateRequest) => VolumesUpdateResponse;
   onVolumeDelete?: (req: VolumesDeleteRequest) => VolumesDeleteResponse;
 };
 
@@ -1156,10 +1153,7 @@ export const createMockConnectTransport = (
           overrides.onVolumeCreate?.(req) ?? {
             object: { id: 'new-volume-1', ...req.object },
           },
-        update: (req) =>
-          overrides.onVolumeUpdate?.(req) ?? {
-            object: req.object,
-          },
+        update: (req) => ({ object: req.object }),
         delete: (req) => {
           if (overrides.onVolumeDelete) {
             return overrides.onVolumeDelete(req);

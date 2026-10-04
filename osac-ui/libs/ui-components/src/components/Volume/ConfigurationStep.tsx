@@ -8,11 +8,7 @@ import OsacForm from '../Form/OsacForm';
 import { SelectField } from '../Form/SelectField';
 import { StorageTierSelectField } from '../Form/StorageTierSelectField';
 
-interface ConfigurationStepProps {
-  isEdit: boolean;
-}
-
-export const ConfigurationStep = ({ isEdit }: ConfigurationStepProps) => {
+export const ConfigurationStep = () => {
   const { t } = useTranslation();
 
   return (
@@ -33,7 +29,6 @@ export const ConfigurationStep = ({ isEdit }: ConfigurationStepProps) => {
             fieldId="spec.storageTier"
             protocol={StorageProtocol.BLOCK}
             isRequired
-            isLocked={isEdit}
           />
           <InputField
             name="spec.sizeGib"
@@ -44,7 +39,6 @@ export const ConfigurationStep = ({ isEdit }: ConfigurationStepProps) => {
             min={1}
             step={1}
             isRequired
-            isDisabled={isEdit}
           />
           <SelectField
             name="spec.accessMode"
@@ -58,7 +52,6 @@ export const ConfigurationStep = ({ isEdit }: ConfigurationStepProps) => {
             ]}
             placeholder={t('Select an access mode')}
             isRequired
-            isDisabled={isEdit}
           />
         </OsacForm>
       </StackItem>

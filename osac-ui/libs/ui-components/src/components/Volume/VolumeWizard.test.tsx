@@ -9,9 +9,6 @@ import {
   StorageProtocol,
   StorageTierSchema,
   StorageTierState,
-  VolumeAccessMode,
-  VolumeSchema,
-  VolumeState,
 } from '@osac/types';
 
 import { VolumeWizard } from './VolumeWizard';
@@ -51,19 +48,8 @@ const storageTier = create(StorageTierSchema, {
   status: { state: StorageTierState.ACTIVE },
 });
 
-const volume = create(VolumeSchema, {
-  id: 'volume-1',
-  metadata: { project: '', name: 'existing-volume', description: 'Keep this volume' },
-  spec: {
-    storageTier: 'block-tier',
-    sizeGib: 128n,
-    accessMode: VolumeAccessMode.READ_WRITE_ONCE,
-  },
-  status: { state: VolumeState.AVAILABLE },
-});
-
-const renderWizard = (existingVolume?: typeof volume) =>
-  renderWithProviders(<VolumeWizard volume={existingVolume} />, {
+const renderWizard = () =>
+  renderWithProviders(<VolumeWizard />, {
     apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
   });
 
@@ -146,28 +132,15 @@ describe('VolumeWizard', () => {
     expect(screen.getByText('ReadWriteOnce')).toBeInTheDocument();
   });
 
-  it('prepopulates edit mode and disables immutable fields while allowing description edits', async () => {
-    const { user } = renderWizard(volume);
+  it('keeps configuration fields editable in the create wizard', async () => {
+    const { user } = renderWizard();
 
-    expect(await screen.findByDisplayValue('existing-volume')).toBeDisabled();
-    expect(screen.getByRole('textbox', { name: 'Description' })).toHaveValue('Keep this volume');
-    expect(screen.getByRole('textbox', { name: 'Description' })).toBeEnabled();
-    expect(
-      screen.getByRole('button', {
-        name: (_name, element) => element.id === 'metadata.project',
-      }),
-    ).toBeDisabled();
-
+    await fillGeneralStep(user);
     await clickNext(user);
-
     expect(await screen.findByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
-    expect(await screen.findByLabelText(/^Storage tier/)).toBeDisabled();
-    expect(screen.getByRole('spinbutton', { name: 'Size (GiB)' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Access Mode' })).toBeDisabled();
-
-    await clickNext(user);
-    expect(await screen.findByRole('heading', { name: 'Review' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    expect(await screen.findByLabelText(/^Storage tier/)).toBeEnabled();
+    expect(screen.getByRole('spinbutton', { name: 'Size (GiB)' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Access Mode' })).toBeEnabled();
   });
 
   it('shows the leave-form confirmation when navigation is blocked', async () => {

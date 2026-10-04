@@ -6,11 +6,7 @@ import { InputField } from '../Form/InputField';
 import OsacForm from '../Form/OsacForm';
 import ProjectField from '../Form/ProjectField';
 
-interface GeneralStepProps {
-  isEdit: boolean;
-}
-
-export const GeneralStep = ({ isEdit }: GeneralStepProps) => {
+export const GeneralStep = () => {
   const { t } = useTranslation();
 
   return (
@@ -22,8 +18,8 @@ export const GeneralStep = ({ isEdit }: GeneralStepProps) => {
       </StackItem>
       <StackItem>
         <OsacForm>
-          <ProjectField isDisabled={isEdit} />
-          <NameField isDisabled={isEdit} />
+          <ProjectField />
+          <NameField />
           <InputField
             name="metadata.description"
             label={t('Description')}

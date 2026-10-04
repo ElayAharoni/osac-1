@@ -10,6 +10,5 @@ export const VolumeRoutes = () => (
     <Route index element={<VolumesListPage />} />
     <Route path="create" element={<VolumeWizardPage />} />
     <Route path=":id" element={<VolumeDetailsPage />} />
-    <Route path=":id/edit" element={<VolumeWizardPage />} />
   </Routes>
 );
