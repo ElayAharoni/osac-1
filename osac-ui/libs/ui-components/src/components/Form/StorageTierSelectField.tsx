@@ -1,10 +1,13 @@
 import { Label } from '@patternfly/react-core';
 import LockIcon from '@patternfly/react-icons/dist/esm/icons/lock-icon';
 
-import { StorageTiers } from '@osac/types';
+import { StorageProtocol, StorageTiers } from '@osac/types';
 
 import { ResourceSelectField } from './ResourceSelectField';
-import { STORAGE_TIER_ACTIVE_LIST_FILTER } from '../../api/v1/storage-tiers';
+import {
+  STORAGE_TIER_ACTIVE_BLOCK_LIST_FILTER,
+  STORAGE_TIER_ACTIVE_LIST_FILTER,
+} from '../../api/v1/storage-tiers';
 import { useTranslation } from '../../hooks/useTranslation';
 
 interface StorageTierSelectFieldProps {
@@ -12,6 +15,7 @@ interface StorageTierSelectFieldProps {
   label: string;
   fieldId: string;
   isRequired?: boolean;
+  protocol?: StorageProtocol;
   /** Renders the picker read-only with a lock badge — the catalog item does not allow editing this field. */
   isLocked?: boolean;
 }
@@ -21,6 +25,7 @@ export const StorageTierSelectField = ({
   label,
   fieldId,
   isRequired = false,
+  protocol,
   isLocked = false,
 }: StorageTierSelectFieldProps) => {
   const { t } = useTranslation();
@@ -31,7 +36,12 @@ export const StorageTierSelectField = ({
       label={label}
       fieldId={fieldId}
       service={StorageTiers}
-      request={{ filter: STORAGE_TIER_ACTIVE_LIST_FILTER }}
+      request={{
+        filter:
+          protocol === StorageProtocol.BLOCK
+            ? STORAGE_TIER_ACTIVE_BLOCK_LIST_FILTER
+            : STORAGE_TIER_ACTIVE_LIST_FILTER,
+      }}
       isRequired={isRequired}
       isDisabled={isLocked}
       labelInfo={

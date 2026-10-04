@@ -1,4 +1,4 @@
-import { type StorageTier, StorageTierState, StorageTiers } from '@osac/types';
+import { StorageProtocol, type StorageTier, StorageTierState, StorageTiers } from '@osac/types';
 
 import { useApiFetch } from '../api-context';
 import { cel } from '../cel';
@@ -9,6 +9,13 @@ import { useApiQuery } from '../use-api-query';
 // with `==` against the int literal (see cluster-versions.ts for the enum caveat).
 export const STORAGE_TIER_ACTIVE_LIST_FILTER = cel<StorageTier>((filter) =>
   filter.field('status.state').equals(StorageTierState.ACTIVE),
+);
+
+export const STORAGE_TIER_ACTIVE_BLOCK_LIST_FILTER = cel<StorageTier>((filter) =>
+  filter.and(
+    filter.field('status.state').equals(StorageTierState.ACTIVE),
+    filter.field('spec.protocol').equals(StorageProtocol.BLOCK),
+  ),
 );
 
 export const useStorageTiers = (params: ListParams = {}) => {
