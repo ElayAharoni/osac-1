@@ -1,5 +1,6 @@
 import { Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { create } from '@bufbuild/protobuf';
+import { Code, ConnectError } from '@connectrpc/connect';
 import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -207,6 +208,24 @@ describe('VolumeWizardPage', () => {
     });
   });
 
+  it('shows a create error without navigating when the API rejects the request', async () => {
+    const { user } = renderAt('/storage/volumes/create', {
+      apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
+      transportOverrides: {
+        onVolumeCreate: () => {
+          throw new ConnectError('backend unavailable', Code.Unavailable);
+        },
+      },
+    });
+
+    await fillValidWizard(user);
+    await user.click(screen.getByRole('button', { name: 'Create volume' }));
+
+    expect(await screen.findByText('Failed to create resource')).toBeInTheDocument();
+    expect(screen.getByText('backend unavailable')).toBeInTheDocument();
+    expect(screen.queryByText(/Volume detail:/)).not.toBeInTheDocument();
+  });
+
   it('updates only the editable description and sends an automatic update mask', async () => {
     let capturedRequest: VolumesUpdateRequest | undefined;
     vi.mocked(useGetResource).mockReturnValue(
@@ -242,5 +261,34 @@ describe('VolumeWizardPage', () => {
       metadata: { description: 'Updated description' },
     });
     expect(capturedRequest?.updateMask?.paths).toEqual(['id', 'metadata.description']);
+  });
+
+  it('shows an update error without navigating when the API rejects the request', async () => {
+    vi.mocked(useGetResource).mockReturnValue(
+      mockQueryResult<VolumesGetResponse>({
+        data: create(VolumesGetResponseSchema, { object: volume }),
+        isLoading: false,
+        error: null,
+      }),
+    );
+    const { user } = renderAt('/storage/volumes/volume-1/edit', {
+      apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
+      transportOverrides: {
+        onVolumeUpdate: () => {
+          throw new ConnectError('update rejected', Code.FailedPrecondition);
+        },
+      },
+    });
+
+    await screen.findByDisplayValue('existing-volume');
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('heading', { name: 'Configuration' });
+    await user.click(screen.getByRole('button', { name: 'Next' }));
+    await screen.findByRole('heading', { name: 'Review' });
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(await screen.findByText('Failed to edit resource')).toBeInTheDocument();
+    expect(screen.getByText('update rejected')).toBeInTheDocument();
+    expect(screen.queryByText(/Volume detail:/)).not.toBeInTheDocument();
   });
 });
