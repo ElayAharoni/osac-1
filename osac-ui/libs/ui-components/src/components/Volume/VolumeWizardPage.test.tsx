@@ -176,6 +176,21 @@ describe('VolumeWizardPage', () => {
     expect(screen.queryByRole('region', { name: 'Volume wizard' })).not.toBeInTheDocument();
   });
 
+  it('shows a not-found state when the edit response has no volume', () => {
+    vi.mocked(useGetResource).mockReturnValue(
+      mockQueryResult<VolumesGetResponse>({
+        data: create(VolumesGetResponseSchema),
+        isLoading: false,
+        error: null,
+      }),
+    );
+
+    renderAt('/storage/volumes/missing-volume/edit');
+
+    expect(screen.getByText('Volume not found')).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Volume wizard' })).not.toBeInTheDocument();
+  });
+
   it('creates a volume and navigates to its detail route', async () => {
     let capturedRequest: VolumesCreateRequest | undefined;
     const { user } = renderAt('/storage/volumes/create', {
