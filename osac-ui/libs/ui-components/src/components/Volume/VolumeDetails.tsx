@@ -42,10 +42,6 @@ const VolumeDetails = ({ volume }: VolumeDetailsProps) => {
   const [deleteOpen, setDeleteOpen] = useState(false);
 
   const state = volume.status?.state;
-  const canEdit =
-    state === VolumeState.AVAILABLE ||
-    state === VolumeState.CREATING ||
-    state === VolumeState.FAILED;
   const canDelete = state === VolumeState.AVAILABLE || state === VolumeState.FAILED;
 
   return (
@@ -77,15 +73,6 @@ const VolumeDetails = ({ volume }: VolumeDetailsProps) => {
               </FlexItem>
               <FlexItem>
                 <Flex spaceItems={{ default: 'spaceItemsSm' }} flexWrap={{ default: 'wrap' }}>
-                  <FlexItem>
-                    <Button
-                      variant="secondary"
-                      isDisabled={!canEdit}
-                      onClick={() => navigate(`${VOLUMES_LIST_PATH}/${volume.id}/edit`)}
-                    >
-                      {t('Edit')}
-                    </Button>
-                  </FlexItem>
                   <FlexItem>
                     <Button
                       variant="danger"
