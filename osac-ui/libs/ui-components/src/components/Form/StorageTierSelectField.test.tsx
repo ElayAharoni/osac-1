@@ -28,6 +28,7 @@ const renderField = (
   options: Parameters<typeof renderWithProviders>[1],
   initialTier: ResourceSelectValue = emptyResourceSelectValue(),
   isLocked = false,
+  protocol?: StorageProtocol,
 ) =>
   renderWithProviders(
     <Formik initialValues={{ tier: initialTier, other: 'keep-me' }} onSubmit={() => undefined}>
@@ -38,6 +39,7 @@ const renderField = (
             label="Storage tier"
             fieldId="tier"
             isLocked={isLocked}
+            protocol={protocol}
           />
           <output aria-label="selected-tier">{JSON.stringify(values.tier)}</output>
           <output data-other>{values.other}</output>
@@ -129,6 +131,45 @@ describe('StorageTierSelectField', () => {
     await waitFor(() => expect(capturedFilter).toBeDefined());
     expect(capturedFilter).toContain(`this.status.state == ${StorageTierState.ACTIVE}`);
     expect(capturedFilter).toContain(`this.spec.protocol == ${StorageProtocol.BLOCK}`);
+  });
+
+  it('lists only active tiers for the requested storage protocol', async () => {
+    const blockTier = makeTier(
+      'block',
+      'Block',
+      'block storage',
+      StorageTierState.ACTIVE,
+      StorageProtocol.BLOCK,
+    );
+    const nfsTier = makeTier(
+      'nfs',
+      'NFS',
+      'file storage',
+      StorageTierState.ACTIVE,
+      StorageProtocol.NFS,
+    );
+    const retiredBlockTier = makeTier(
+      'retired-block',
+      'Retired block',
+      'retired block storage',
+      StorageTierState.UNSPECIFIED,
+      StorageProtocol.BLOCK,
+    );
+    const { user } = renderField(
+      {
+        apiFixtures: { publicStorageTiers: [blockTier, nfsTier, retiredBlockTier] },
+      },
+      emptyResourceSelectValue(),
+      false,
+      StorageProtocol.BLOCK,
+    );
+
+    const toggle = await screen.findByLabelText(/^Storage tier/);
+    await user.click(toggle);
+
+    expect(screen.getByRole('option', { name: 'block' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'nfs' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'retired-block' })).not.toBeInTheDocument();
   });
 
   it('shows an empty warning when no tiers are available', async () => {

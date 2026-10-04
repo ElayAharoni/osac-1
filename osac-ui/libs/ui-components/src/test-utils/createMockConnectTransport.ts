@@ -345,11 +345,13 @@ const matchesStorageBackendReadyFilter = (
 const matchesStorageTierActiveFilter = (
   filter: string | undefined,
   state: number | undefined,
+  protocol: number | undefined,
 ): boolean => {
-  if (!filter?.includes('this.status.state ==')) {
-    return true;
+  if (filter?.includes('this.status.state ==') && state !== StorageTierState.ACTIVE) {
+    return false;
   }
-  return state === StorageTierState.ACTIVE;
+  const protocolMatch = filter?.match(/this\.spec\.protocol == (\d+)/);
+  return !protocolMatch || protocol === Number(protocolMatch[1]);
 };
 
 export type MockTransportOverrides = {
@@ -782,7 +784,7 @@ export const createMockConnectTransport = (
             return overrides.onStorageTierList(req);
           }
           const items = storageTiers.filter((item) =>
-            matchesStorageTierActiveFilter(req.filter, item.status?.state),
+            matchesStorageTierActiveFilter(req.filter, item.status?.state, item.spec?.protocol),
           );
           return {
             items,
@@ -829,7 +831,7 @@ export const createMockConnectTransport = (
             return overrides.onPublicStorageTierList(req);
           }
           const items = publicStorageTiers.filter((item) =>
-            matchesStorageTierActiveFilter(req.filter, item.status?.state),
+            matchesStorageTierActiveFilter(req.filter, item.status?.state, item.spec?.protocol),
           );
           return {
             items,
