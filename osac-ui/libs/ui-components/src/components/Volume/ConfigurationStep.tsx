@@ -10,6 +10,12 @@ import { StorageTierSelectField } from '../Form/StorageTierSelectField';
 
 export const ConfigurationStep = () => {
   const { t } = useTranslation();
+  const accessModeOptions = [
+    { value: VolumeAccessMode.READ_WRITE_ONCE, label: t('ReadWriteOnce') },
+    { value: VolumeAccessMode.READ_ONLY_MANY, label: t('ReadOnlyMany') },
+    { value: VolumeAccessMode.READ_WRITE_MANY, label: t('ReadWriteMany') },
+    { value: VolumeAccessMode.READ_WRITE_ONCE_POD, label: t('ReadWriteOncePod') },
+  ];
 
   return (
     <Stack hasGutter>
@@ -44,12 +50,7 @@ export const ConfigurationStep = () => {
             name="spec.accessMode"
             label={t('Access Mode')}
             fieldId="spec.accessMode"
-            options={[
-              { value: VolumeAccessMode.READ_WRITE_ONCE, label: t('ReadWriteOnce') },
-              { value: VolumeAccessMode.READ_ONLY_MANY, label: t('ReadOnlyMany') },
-              { value: VolumeAccessMode.READ_WRITE_MANY, label: t('ReadWriteMany') },
-              { value: VolumeAccessMode.READ_WRITE_ONCE_POD, label: t('ReadWriteOncePod') },
-            ]}
+            options={accessModeOptions}
             placeholder={t('Select an access mode')}
             isRequired
           />

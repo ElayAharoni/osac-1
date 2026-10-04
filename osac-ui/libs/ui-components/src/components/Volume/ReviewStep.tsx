@@ -16,7 +16,12 @@ import { displayValue } from '../../utils/detailFormatters';
 
 export const ReviewStep = () => {
   const { t } = useTranslation();
-  const { values } = useFormikContext<VolumeFormValues>();
+  const {
+    values: {
+      metadata: { project, name, description },
+      spec: { storageTier, sizeGib, accessMode },
+    },
+  } = useFormikContext<VolumeFormValues>();
 
   return (
     <Stack hasGutter>
@@ -29,38 +34,32 @@ export const ReviewStep = () => {
         <DescriptionList isHorizontal isCompact aria-label={t('Review')}>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Project')}</DescriptionListTerm>
-            <DescriptionListDescription>
-              {values.metadata.project || t('Default')}
-            </DescriptionListDescription>
+            <DescriptionListDescription>{project || t('Default')}</DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Name')}</DescriptionListTerm>
-            <DescriptionListDescription>
-              {displayValue(values.metadata.name)}
-            </DescriptionListDescription>
+            <DescriptionListDescription>{displayValue(name)}</DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Description')}</DescriptionListTerm>
-            <DescriptionListDescription>
-              {displayValue(values.metadata.description)}
-            </DescriptionListDescription>
+            <DescriptionListDescription>{displayValue(description)}</DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Storage tier')}</DescriptionListTerm>
             <DescriptionListDescription>
-              {displayValue(values.spec.storageTier.name)}
+              {displayValue(storageTier.name)}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Size (GiB)')}</DescriptionListTerm>
             <DescriptionListDescription>
-              {values.spec.sizeGib ? `${values.spec.sizeGib} GiB` : '—'}
+              {sizeGib ? `${sizeGib} GiB` : '—'}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Access Mode')}</DescriptionListTerm>
             <DescriptionListDescription>
-              <VolumeAccessModeLabel accessMode={values.spec.accessMode} />
+              <VolumeAccessModeLabel accessMode={accessMode} />
             </DescriptionListDescription>
           </DescriptionListGroup>
         </DescriptionList>
