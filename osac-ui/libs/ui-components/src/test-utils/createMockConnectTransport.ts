@@ -55,10 +55,14 @@ import {
   User,
   VirtualNetwork,
   Volume,
+  VolumesCreateRequest,
+  VolumesCreateResponse,
   VolumesDeleteRequest,
   VolumesDeleteResponse,
   VolumesGetRequest,
   VolumesGetResponse,
+  VolumesUpdateRequest,
+  VolumesUpdateResponse,
 } from '@osac/types';
 import {
   Capabilities,
@@ -447,6 +451,8 @@ export type MockTransportOverrides = {
     req: ExternalIPAttachmentsCreateRequest,
   ) => ExternalIPAttachmentsCreateResponse | Promise<ExternalIPAttachmentsCreateResponse>;
   onVolumeGet?: (req: VolumesGetRequest) => VolumesGetResponse | Promise<VolumesGetResponse>;
+  onVolumeCreate?: (req: VolumesCreateRequest) => VolumesCreateResponse;
+  onVolumeUpdate?: (req: VolumesUpdateRequest) => VolumesUpdateResponse;
   onVolumeDelete?: (req: VolumesDeleteRequest) => VolumesDeleteResponse;
 };
 
@@ -1144,12 +1150,14 @@ export const createMockConnectTransport = (
           }
           return { object: volumes.find((v) => v.id === req.id) };
         },
-        create: (req) => ({
-          object: { id: 'new-volume-1', ...req.object },
-        }),
-        update: (req) => ({
-          object: req.object,
-        }),
+        create: (req) =>
+          overrides.onVolumeCreate?.(req) ?? {
+            object: { id: 'new-volume-1', ...req.object },
+          },
+        update: (req) =>
+          overrides.onVolumeUpdate?.(req) ?? {
+            object: req.object,
+          },
         delete: (req) => {
           if (overrides.onVolumeDelete) {
             return overrides.onVolumeDelete(req);
