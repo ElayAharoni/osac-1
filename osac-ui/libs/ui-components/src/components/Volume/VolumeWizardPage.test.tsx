@@ -15,6 +15,8 @@ import {
   Volumes,
   type VolumesCreateRequest,
   VolumesCreateResponseSchema,
+  type VolumesGetResponse,
+  VolumesGetResponseSchema,
   type VolumesUpdateRequest,
   VolumesUpdateResponseSchema,
 } from '@osac/types';
@@ -106,7 +108,7 @@ describe('VolumeWizardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useGetResource).mockReturnValue(
-      mockQueryResult({ data: undefined, isLoading: false, error: null }),
+      mockQueryResult<VolumesGetResponse>({ data: undefined, isLoading: false, error: null }),
     );
   });
 
@@ -127,7 +129,7 @@ describe('VolumeWizardPage', () => {
 
   it('shows a loading state while fetching an edit volume', () => {
     vi.mocked(useGetResource).mockReturnValue(
-      mockQueryResult({ data: undefined, isLoading: true, error: null }),
+      mockQueryResult<VolumesGetResponse>({ data: undefined, isLoading: true, error: null }),
     );
 
     renderAt('/storage/volumes/volume-1/edit');
@@ -138,7 +140,11 @@ describe('VolumeWizardPage', () => {
 
   it('passes the fetched volume to the edit wizard', async () => {
     vi.mocked(useGetResource).mockReturnValue(
-      mockQueryResult({ data: { object: volume }, isLoading: false, error: null }),
+      mockQueryResult<VolumesGetResponse>({
+        data: create(VolumesGetResponseSchema, { object: volume }),
+        isLoading: false,
+        error: null,
+      }),
     );
 
     renderAt('/storage/volumes/volume-1/edit');
@@ -155,7 +161,11 @@ describe('VolumeWizardPage', () => {
 
   it('shows an error when the edit volume cannot be fetched', () => {
     vi.mocked(useGetResource).mockReturnValue(
-      mockQueryResult({ data: undefined, isLoading: false, error: new Error('Network error') }),
+      mockQueryResult<VolumesGetResponse>({
+        data: undefined,
+        isLoading: false,
+        error: new Error('Network error'),
+      }),
     );
 
     renderAt('/storage/volumes/volume-1/edit');
@@ -200,7 +210,11 @@ describe('VolumeWizardPage', () => {
   it('updates only the editable description and sends an automatic update mask', async () => {
     let capturedRequest: VolumesUpdateRequest | undefined;
     vi.mocked(useGetResource).mockReturnValue(
-      mockQueryResult({ data: { object: volume }, isLoading: false, error: null }),
+      mockQueryResult<VolumesGetResponse>({
+        data: create(VolumesGetResponseSchema, { object: volume }),
+        isLoading: false,
+        error: null,
+      }),
     );
     const { user } = renderAt('/storage/volumes/volume-1/edit', {
       apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
