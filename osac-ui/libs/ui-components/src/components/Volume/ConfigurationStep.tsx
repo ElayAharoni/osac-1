@@ -1,0 +1,67 @@
+import { Content, Stack, StackItem, Title } from '@patternfly/react-core';
+
+import { StorageProtocol, VolumeAccessMode } from '@osac/types';
+
+import { useTranslation } from '../../hooks/useTranslation';
+import { InputField } from '../Form/InputField';
+import OsacForm from '../Form/OsacForm';
+import { SelectField } from '../Form/SelectField';
+import { StorageTierSelectField } from '../Form/StorageTierSelectField';
+
+interface ConfigurationStepProps {
+  isEdit: boolean;
+}
+
+export const ConfigurationStep = ({ isEdit }: ConfigurationStepProps) => {
+  const { t } = useTranslation();
+
+  return (
+    <Stack hasGutter>
+      <StackItem>
+        <Title headingLevel="h2" size="lg">
+          {t('Configuration')}
+        </Title>
+      </StackItem>
+      <StackItem>
+        <Content component="p">{t('Configure the volume storage and access settings.')}</Content>
+      </StackItem>
+      <StackItem>
+        <OsacForm>
+          <StorageTierSelectField
+            name="spec.storageTier"
+            label={t('Storage tier')}
+            fieldId="spec.storageTier"
+            protocol={StorageProtocol.BLOCK}
+            isRequired
+            isLocked={isEdit}
+          />
+          <InputField
+            name="spec.sizeGib"
+            label={t('Size (GiB)')}
+            fieldId="spec.sizeGib"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            step={1}
+            isRequired
+            isDisabled={isEdit}
+          />
+          <SelectField
+            name="spec.accessMode"
+            label={t('Access Mode')}
+            fieldId="spec.accessMode"
+            options={[
+              { value: VolumeAccessMode.READ_WRITE_ONCE, label: t('ReadWriteOnce') },
+              { value: VolumeAccessMode.READ_ONLY_MANY, label: t('ReadOnlyMany') },
+              { value: VolumeAccessMode.READ_WRITE_MANY, label: t('ReadWriteMany') },
+              { value: VolumeAccessMode.READ_WRITE_ONCE_POD, label: t('ReadWriteOncePod') },
+            ]}
+            placeholder={t('Select an access mode')}
+            isRequired
+            isDisabled={isEdit}
+          />
+        </OsacForm>
+      </StackItem>
+    </Stack>
+  );
+};
