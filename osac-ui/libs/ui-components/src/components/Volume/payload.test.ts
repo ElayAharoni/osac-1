@@ -7,22 +7,22 @@ import type { VolumeFormValues } from './values';
 
 const values: VolumeFormValues = {
   metadata: {
-    project: 'project-a',
     name: 'data-volume',
     description: 'A block volume',
   },
   spec: {
     storageTier: { id: 'gold-block', name: 'gold-block' },
-    sizeGib: '128',
+    sizeGib: 128,
     accessMode: VolumeAccessMode.READ_WRITE_ONCE,
   },
 };
 
 describe('buildVolumeCreatePayload', () => {
   it('maps form values to the Volume create object', () => {
-    expect(buildVolumeCreatePayload(values)).toEqual({
+    const payload = buildVolumeCreatePayload(values);
+
+    expect(payload).toEqual({
       metadata: {
-        project: 'project-a',
         name: 'data-volume',
         description: 'A block volume',
       },
@@ -32,5 +32,6 @@ describe('buildVolumeCreatePayload', () => {
         accessMode: VolumeAccessMode.READ_WRITE_ONCE,
       },
     });
+    expect(payload.metadata).not.toHaveProperty('project');
   });
 });

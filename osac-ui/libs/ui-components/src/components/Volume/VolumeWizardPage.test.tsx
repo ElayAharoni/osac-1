@@ -1,12 +1,10 @@
 import { Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { create } from '@bufbuild/protobuf';
 import { Code, ConnectError } from '@connectrpc/connect';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  ProjectSchema,
-  ProjectState,
   StorageProtocol,
   StorageTierSchema,
   StorageTierState,
@@ -15,20 +13,13 @@ import {
   VolumesCreateResponseSchema,
 } from '@osac/types';
 
-import { VolumeWizardPage } from './VolumeWizardPage';
+import VolumeWizardPage from './VolumeWizardPage';
 import type { RenderWithProvidersOptions } from '../../test-utils/TestProviders';
 import { renderWithProviders } from '../../test-utils/TestProviders';
 
 vi.mock('react-router-dom', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react-router-dom')>();
   return { ...actual, useBlocker: () => ({ state: 'unblocked' as const }) };
-});
-
-const project = create(ProjectSchema, {
-  id: 'project-1',
-  metadata: { name: '' },
-  spec: { title: 'Default' },
-  status: { state: ProjectState.ACTIVE },
 });
 
 const storageTier = create(StorageTierSchema, {
@@ -60,12 +51,6 @@ const renderAt = (path: string, options: Omit<RenderWithProvidersOptions, 'route
 
 const fillValidWizard = async (user: ReturnType<typeof renderWithProviders>['user']) => {
   await user.type(screen.getByRole('textbox', { name: 'Name' }), 'new-volume');
-  const projectToggle = screen.getByRole('button', {
-    name: (_name, element) => element.id === 'metadata.project',
-  });
-  await waitFor(() => expect(projectToggle).toBeEnabled());
-  await user.click(projectToggle);
-  await user.click(screen.getByRole('option', { name: 'Default' }));
   await user.click(screen.getByRole('button', { name: 'Next' }));
   expect(await screen.findByRole('heading', { name: 'Configuration' })).toBeInTheDocument();
 
@@ -95,7 +80,7 @@ describe('VolumeWizardPage', () => {
   it('creates a volume and navigates to its detail route', async () => {
     let capturedRequest: VolumesCreateRequest | undefined;
     const { user } = renderAt('/storage/volumes/create', {
-      apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
+      apiFixtures: { publicStorageTiers: [storageTier] },
       transportOverrides: {
         onVolumeCreate: (request) => {
           capturedRequest = request;
@@ -115,7 +100,7 @@ describe('VolumeWizardPage', () => {
 
     expect(await screen.findByText('Volume detail: created-volume')).toBeInTheDocument();
     expect(capturedRequest?.object).toMatchObject({
-      metadata: { name: 'new-volume', project: '' },
+      metadata: { name: 'new-volume' },
       spec: {
         storageTier: 'block-tier',
         sizeGib: 64n,
@@ -126,7 +111,7 @@ describe('VolumeWizardPage', () => {
 
   it('shows a create error without navigating when the API rejects the request', async () => {
     const { user } = renderAt('/storage/volumes/create', {
-      apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
+      apiFixtures: { publicStorageTiers: [storageTier] },
       transportOverrides: {
         onVolumeCreate: () => {
           throw new ConnectError('backend unavailable', Code.Unavailable);

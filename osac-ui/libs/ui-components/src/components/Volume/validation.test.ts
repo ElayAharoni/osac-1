@@ -9,13 +9,12 @@ import { tIdentity as t } from '../../test-utils/i18n';
 
 const validValues: VolumeFormValues = {
   metadata: {
-    project: 'project-a',
     name: 'data-volume',
     description: 'A block volume',
   },
   spec: {
     storageTier: { id: 'gold-block', name: 'gold-block' },
-    sizeGib: '128',
+    sizeGib: 128,
     accessMode: VolumeAccessMode.READ_WRITE_ONCE,
   },
 };
@@ -57,7 +56,6 @@ describe('getVolumeValidationSchema', () => {
 describe('volumeStepHasErrors', () => {
   it.each([
     ['general', { metadata: { name: 'Name is required' } }],
-    ['general', { metadata: { project: 'Project is required' } }],
     ['configuration', { spec: { storageTier: 'Storage tier is required' } }],
     ['configuration', { spec: { sizeGib: 'Must be greater than zero' } }],
     ['configuration', { spec: { accessMode: 'Access mode is required' } }],

@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom';
 
-import { VolumeWizardPage } from '@osac/ui-components/components/Volume/VolumeWizardPage';
+import VolumeWizardPage from '@osac/ui-components/components/Volume/VolumeWizardPage';
 
 import { VolumeDetailsPage } from './VolumeDetailsPage';
 import { VolumesListPage } from './VolumesListPage';

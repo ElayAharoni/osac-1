@@ -1,17 +1,11 @@
 import { create } from '@bufbuild/protobuf';
-import { screen, waitFor } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import type { UserEvent } from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  ProjectSchema,
-  ProjectState,
-  StorageProtocol,
-  StorageTierSchema,
-  StorageTierState,
-} from '@osac/types';
+import { StorageProtocol, StorageTierSchema, StorageTierState } from '@osac/types';
 
-import { VolumeWizard } from './VolumeWizard';
+import VolumeWizard from './VolumeWizard';
 import { renderWithProviders } from '../../test-utils/TestProviders';
 
 const routerMocks = vi.hoisted(() => ({
@@ -34,13 +28,6 @@ vi.mock('react-router-dom', async (importOriginal) => {
   };
 });
 
-const project = create(ProjectSchema, {
-  id: 'project-1',
-  metadata: { name: '' },
-  spec: { title: 'Default' },
-  status: { state: ProjectState.ACTIVE },
-});
-
 const storageTier = create(StorageTierSchema, {
   id: 'tier-block',
   metadata: { name: 'block-tier' },
@@ -50,25 +37,15 @@ const storageTier = create(StorageTierSchema, {
 
 const renderWizard = () =>
   renderWithProviders(<VolumeWizard />, {
-    apiFixtures: { projects: [project], publicStorageTiers: [storageTier] },
+    apiFixtures: { publicStorageTiers: [storageTier] },
   });
 
 const clickNext = async (user: UserEvent) => {
   await user.click(screen.getByRole('button', { name: 'Next' }));
 };
 
-const selectDefaultProject = async (user: UserEvent) => {
-  const projectToggle = screen.getByRole('button', {
-    name: (_name, element) => element.id === 'metadata.project',
-  });
-  await waitFor(() => expect(projectToggle).toBeEnabled());
-  await user.click(projectToggle);
-  await user.click(screen.getByRole('option', { name: 'Default' }));
-};
-
 const fillGeneralStep = async (user: UserEvent) => {
   await user.type(screen.getByRole('textbox', { name: 'Name' }), 'new-volume');
-  await selectDefaultProject(user);
 };
 
 const selectConfigurationValues = async (user: UserEvent) => {
@@ -97,13 +74,11 @@ describe('VolumeWizard', () => {
     expect(screen.getByRole('heading', { name: 'General' })).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Name' })).toBeEnabled();
     expect(screen.getByRole('textbox', { name: 'Description' })).toBeEnabled();
-    await waitFor(() => {
-      expect(
-        screen.getByRole('button', {
-          name: (_name, element) => element.id === 'metadata.project',
-        }),
-      ).toBeEnabled();
-    });
+    expect(
+      screen.queryByRole('button', {
+        name: (_name, element) => element.id === 'metadata.project',
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('shows validation errors and stays on General when required fields are empty', async () => {
@@ -126,6 +101,7 @@ describe('VolumeWizard', () => {
     await clickNext(user);
 
     expect(await screen.findByRole('heading', { name: 'Review' })).toBeInTheDocument();
+    expect(screen.queryByText('Project')).not.toBeInTheDocument();
     expect(screen.getByText('new-volume')).toBeInTheDocument();
     expect(screen.getByText('block-tier')).toBeInTheDocument();
     expect(screen.getByText('64 GiB')).toBeInTheDocument();

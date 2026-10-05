@@ -38,7 +38,7 @@ export const volumeStepHasErrors = (stepId: string, errors: FormikErrors<unknown
 
   switch (stepId) {
     case 'general':
-      return Boolean(formErrors.metadata?.name || formErrors.metadata?.project);
+      return Boolean(formErrors.metadata?.name);
     case 'configuration':
       return Boolean(
         formErrors.spec?.storageTier || formErrors.spec?.sizeGib || formErrors.spec?.accessMode,

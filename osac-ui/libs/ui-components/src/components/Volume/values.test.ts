@@ -9,13 +9,12 @@ describe('getVolumeValues', () => {
   it('returns empty create values', () => {
     expect(getVolumeValues()).toEqual({
       metadata: {
-        project: '',
         name: '',
         description: '',
       },
       spec: {
         storageTier: emptyResourceSelectValue(),
-        sizeGib: '',
+        sizeGib: undefined,
         accessMode: VolumeAccessMode.UNSPECIFIED,
       },
     });

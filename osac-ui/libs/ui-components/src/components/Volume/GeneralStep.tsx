@@ -4,9 +4,8 @@ import { useTranslation } from '../../hooks/useTranslation';
 import NameField from '../catalogProvision/wizard/fields/NameField';
 import { InputField } from '../Form/InputField';
 import OsacForm from '../Form/OsacForm';
-import ProjectField from '../Form/ProjectField';
 
-export const GeneralStep = () => {
+const GeneralStep = () => {
   const { t } = useTranslation();
 
   return (
@@ -18,7 +17,6 @@ export const GeneralStep = () => {
       </StackItem>
       <StackItem>
         <OsacForm>
-          <ProjectField />
           <NameField />
           <InputField
             name="metadata.description"
@@ -31,3 +29,5 @@ export const GeneralStep = () => {
     </Stack>
   );
 };
+
+export default GeneralStep;

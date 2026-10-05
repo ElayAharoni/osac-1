@@ -5,12 +5,12 @@ import { Formik } from 'formik';
 
 import { Volumes } from '@osac/types';
 
-import { ConfigurationStep } from './ConfigurationStep';
-import { GeneralStep } from './GeneralStep';
+import ConfigurationStep from './ConfigurationStep';
+import GeneralStep from './GeneralStep';
 import { buildVolumeCreatePayload } from './payload';
-import { ReviewStep } from './ReviewStep';
+import ReviewStep from './ReviewStep';
 import { getVolumeValidationSchema, volumeStepHasErrors } from './validation';
-import { type VolumeFormValues, getVolumeValues } from './values';
+import { VOLUMES_LIST_PATH, type VolumeFormValues, getVolumeValues } from './values';
 import { useCreateResource } from '../../api/use-resource';
 import { useTranslation } from '../../hooks/useTranslation';
 import { FieldValidationProvider } from '../Form/FieldValidationContext';
@@ -19,7 +19,7 @@ import { OSACWizardFooter } from '../Wizard/OSACWizardFooter';
 
 type VolumeWizardStep = 'general' | 'configuration' | 'review';
 
-export const VolumeWizard = () => {
+const VolumeWizard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<VolumeWizardStep>('general');
@@ -33,7 +33,9 @@ export const VolumeWizard = () => {
   const onSubmit = async (values: VolumeFormValues) => {
     try {
       const response = await createVolume({ object: buildVolumeCreatePayload(values) });
-      navigate(response.object?.id ? `/storage/volumes/${response.object.id}` : '/storage/volumes');
+      navigate(
+        response.object?.id ? `${VOLUMES_LIST_PATH}/${response.object.id}` : VOLUMES_LIST_PATH,
+      );
     } catch {
       // The mutation error is rendered by OSACWizardFooter.
     }
@@ -45,42 +47,42 @@ export const VolumeWizard = () => {
       validationSchema={getVolumeValidationSchema(t)}
       onSubmit={onSubmit}
     >
-      <>
-        <FieldValidationProvider>
-          <LeaveFormConfirmation />
-          <PageSection
-            hasBodyWrapper={false}
-            isFilled
-            type={PageSectionTypes.wizard}
-            aria-label={t('Volume wizard')}
+      <FieldValidationProvider>
+        <LeaveFormConfirmation />
+        <PageSection
+          hasBodyWrapper={false}
+          isFilled
+          type={PageSectionTypes.wizard}
+          aria-label={t('Volume wizard')}
+        >
+          <Wizard
+            navAriaLabel={t('Volume wizard steps')}
+            isVisitRequired
+            footer={
+              <OSACWizardFooter
+                onCancel={() => navigate(VOLUMES_LIST_PATH)}
+                stepHasErrors={volumeStepHasErrors}
+                error={createError}
+                onErrorReset={resetCreate}
+                submitLabel={t('Create volume')}
+              />
+            }
+            onStepChange={(_, step) => setCurrentStep(step.id as VolumeWizardStep)}
           >
-            <Wizard
-              navAriaLabel={t('Volume wizard steps')}
-              isVisitRequired
-              footer={
-                <OSACWizardFooter
-                  onCancel={() => navigate('/storage/volumes')}
-                  stepHasErrors={volumeStepHasErrors}
-                  error={createError}
-                  onErrorReset={resetCreate}
-                  submitLabel={t('Create volume')}
-                />
-              }
-              onStepChange={(_, step) => setCurrentStep(step.id as VolumeWizardStep)}
-            >
-              <WizardStep id="general" name={t('General')}>
-                {currentStep === 'general' && <GeneralStep />}
-              </WizardStep>
-              <WizardStep id="configuration" name={t('Configuration')}>
-                {currentStep === 'configuration' && <ConfigurationStep />}
-              </WizardStep>
-              <WizardStep id="review" name={t('Review')}>
-                {currentStep === 'review' && <ReviewStep />}
-              </WizardStep>
-            </Wizard>
-          </PageSection>
-        </FieldValidationProvider>
-      </>
+            <WizardStep id="general" name={t('General')}>
+              {currentStep === 'general' && <GeneralStep />}
+            </WizardStep>
+            <WizardStep id="configuration" name={t('Configuration')}>
+              {currentStep === 'configuration' && <ConfigurationStep />}
+            </WizardStep>
+            <WizardStep id="review" name={t('Review')}>
+              {currentStep === 'review' && <ReviewStep />}
+            </WizardStep>
+          </Wizard>
+        </PageSection>
+      </FieldValidationProvider>
     </Formik>
   );
 };
+
+export default VolumeWizard;

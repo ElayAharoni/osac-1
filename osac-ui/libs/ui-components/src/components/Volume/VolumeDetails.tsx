@@ -19,6 +19,7 @@ import {
 import type { Volume } from '@osac/types';
 import { VolumeState } from '@osac/types';
 
+import { VOLUMES_LIST_PATH } from './values';
 import { VolumeAccessModeLabel } from './VolumeAccessModeLabel';
 import VolumeDeleteConfirmModal from './VolumeDeleteConfirmModal';
 import { VolumeStatusLabel } from './VolumeStatusLabel';
@@ -30,8 +31,6 @@ import { ResourceDetailHeader } from '../Resource/ResourceDetailHeader';
 interface VolumeDetailsProps {
   volume: Volume;
 }
-
-const VOLUMES_LIST_PATH = '/storage/volumes';
 
 const formatSizeGib = (sizeGib: bigint | undefined): string =>
   sizeGib === undefined ? '—' : `${sizeGib} GiB`;

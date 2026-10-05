@@ -2,28 +2,28 @@ import { VolumeAccessMode } from '@osac/types';
 
 import { type ResourceSelectValue, emptyResourceSelectValue } from '../Form/ResourceSelectField';
 
+export const VOLUMES_LIST_PATH = '/storage/volumes';
+
 export interface VolumeFormValues {
   metadata: {
-    project: string;
     name: string;
     description: string;
   };
   spec: {
     storageTier: ResourceSelectValue;
-    sizeGib: string;
+    sizeGib: number | undefined;
     accessMode: VolumeAccessMode;
   };
 }
 
 export const getVolumeValues = (): VolumeFormValues => ({
   metadata: {
-    project: '',
     name: '',
     description: '',
   },
   spec: {
     storageTier: emptyResourceSelectValue(),
-    sizeGib: '',
+    sizeGib: undefined,
     accessMode: VolumeAccessMode.UNSPECIFIED,
   },
 });

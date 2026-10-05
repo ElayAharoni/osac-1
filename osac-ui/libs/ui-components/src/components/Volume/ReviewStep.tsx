@@ -14,11 +14,11 @@ import { VolumeAccessModeLabel } from './VolumeAccessModeLabel';
 import { useTranslation } from '../../hooks/useTranslation';
 import { displayValue } from '../../utils/detailFormatters';
 
-export const ReviewStep = () => {
+const ReviewStep = () => {
   const { t } = useTranslation();
   const {
     values: {
-      metadata: { project, name, description },
+      metadata: { name, description },
       spec: { storageTier, sizeGib, accessMode },
     },
   } = useFormikContext<VolumeFormValues>();
@@ -32,10 +32,6 @@ export const ReviewStep = () => {
       </StackItem>
       <StackItem>
         <DescriptionList isHorizontal isCompact aria-label={t('Review')}>
-          <DescriptionListGroup>
-            <DescriptionListTerm>{t('Project')}</DescriptionListTerm>
-            <DescriptionListDescription>{project || t('Default')}</DescriptionListDescription>
-          </DescriptionListGroup>
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Name')}</DescriptionListTerm>
             <DescriptionListDescription>{displayValue(name)}</DescriptionListDescription>
@@ -53,7 +49,7 @@ export const ReviewStep = () => {
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Size (GiB)')}</DescriptionListTerm>
             <DescriptionListDescription>
-              {sizeGib ? `${sizeGib} GiB` : '—'}
+              {sizeGib !== undefined ? `${sizeGib} GiB` : '—'}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
@@ -67,3 +63,5 @@ export const ReviewStep = () => {
     </Stack>
   );
 };
+
+export default ReviewStep;

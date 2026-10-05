@@ -10,11 +10,10 @@ import {
 
 import { useTranslation } from '@osac/ui-components/hooks/useTranslation';
 
-import { VolumeWizard } from './VolumeWizard';
+import { VOLUMES_LIST_PATH } from './values';
+import VolumeWizard from './VolumeWizard';
 
-const VOLUMES_LIST_PATH = '/storage/volumes';
-
-export const VolumeWizardPage = () => {
+const VolumeWizardPage = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   return (
@@ -38,3 +37,5 @@ export const VolumeWizardPage = () => {
     </>
   );
 };
+
+export default VolumeWizardPage;
