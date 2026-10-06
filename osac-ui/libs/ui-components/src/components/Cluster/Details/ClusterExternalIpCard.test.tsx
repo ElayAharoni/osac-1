@@ -88,7 +88,7 @@ describe('groupAttachmentsByEndpoint', () => {
     expect(result.ingress.externalIpAddress).toBeUndefined();
   });
 
-  it('does not occupy an endpoint while its attachment is deleting', () => {
+  it('keeps an endpoint occupied while its attachment is deleting', () => {
     const deletingAttachment = makeAttachment(
       ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
       '',
@@ -97,7 +97,7 @@ describe('groupAttachmentsByEndpoint', () => {
 
     const result = groupAttachmentsByEndpoint([deletingAttachment]);
 
-    expect(result.api.attachment).toBeUndefined();
+    expect(result.api.attachment).toBe(deletingAttachment);
   });
 });
 
@@ -138,6 +138,42 @@ describe('ClusterExternalIpCard', () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText('Not attached')).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(1);
+  });
+
+  it('disables detach while an attachment is still being provisioned', () => {
+    const attachment = makeAttachment(
+      ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+      '',
+      ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_PENDING,
+    );
+    mockUseExternalIPAttachments([attachment]);
+
+    render(<ClusterExternalIpCard cluster={makeCluster()} onDetach={vi.fn()} />);
+
+    expect(
+      screen.getByRole('button', { name: 'Detach External IP from API endpoint' }),
+    ).toBeDisabled();
+  });
+
+  it('disables attach while auto-provisioned endpoint attachments are pending', () => {
+    const autoCluster = create(ClusterSchema, {
+      id: 'cl-1',
+      spec: { autoExternalIpAttachment: true },
+      status: {
+        state: ClusterState.READY,
+        apiEndpoint: 'api.example.com',
+        ingressEndpoint: 'apps.example.com',
+      },
+    });
+    mockUseExternalIPAttachments();
+
+    render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} />);
+
+    expect(screen.getAllByText('Auto-provisioned')).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(2);
+    screen
+      .getAllByRole('button', { name: 'Attach External IP' })
+      .forEach((button) => expect(button).toBeDisabled());
   });
 
   it('sends the endpoint-specific action to the details tab', async () => {
