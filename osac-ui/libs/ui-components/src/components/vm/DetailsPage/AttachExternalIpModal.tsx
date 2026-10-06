@@ -10,10 +10,9 @@ import ExternalIpAttachModal from '../../ExternalIp/AttachExternalIpModal';
 interface AttachExternalIpModalProps {
   vm: ComputeInstance;
   onClose: () => void;
-  onSuccess: () => void;
 }
 
-const AttachExternalIpModal = ({ vm, onClose, onSuccess }: AttachExternalIpModalProps) => {
+const AttachExternalIpModal = ({ vm, onClose }: AttachExternalIpModalProps) => {
   const { t } = useTranslation();
   const createAttachment = useCreateExternalIPAttachment();
 
@@ -33,7 +32,6 @@ const AttachExternalIpModal = ({ vm, onClose, onSuccess }: AttachExternalIpModal
         })
       }
       onClose={onClose}
-      onSuccess={onSuccess}
     />
   );
 };

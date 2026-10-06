@@ -11,15 +11,9 @@ export interface AttachExternalIpModalProps {
   clusterId: string;
   endpoint: ExternalIPAttachmentEndpoint;
   onClose: () => void;
-  onSuccess: () => void;
 }
 
-const AttachExternalIpModal = ({
-  clusterId,
-  endpoint,
-  onClose,
-  onSuccess,
-}: AttachExternalIpModalProps) => {
+const AttachExternalIpModal = ({ clusterId, endpoint, onClose }: AttachExternalIpModalProps) => {
   const { t } = useTranslation();
   const createAttachment = useCreateExternalIPAttachment();
   const title =
@@ -45,7 +39,6 @@ const AttachExternalIpModal = ({
         })
       }
       onClose={onClose}
-      onSuccess={onSuccess}
     />
   );
 };

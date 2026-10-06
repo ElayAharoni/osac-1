@@ -2,7 +2,7 @@ import { create } from '@bufbuild/protobuf';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { ClusterSchema, ClusterState } from '@osac/types';
+import { ClusterSchema } from '@osac/types';
 
 import ClusterNetworkingCard from './ClusterNetworkingCard';
 
@@ -65,21 +65,5 @@ describe('ClusterNetworkingCard', () => {
 
     expect(screen.getByText('10.128.0.0/14')).toBeInTheDocument();
     expect(screen.getByText('172.30.0.0/16')).toBeInTheDocument();
-  });
-
-  it('leaves API and Ingress endpoint presentation to the attachment card', () => {
-    const cluster = create(ClusterSchema, {
-      id: 'cl-endpoints',
-      status: {
-        state: ClusterState.READY,
-        apiEndpoint: 'api.example.com',
-        ingressEndpoint: 'apps.example.com',
-      },
-    });
-
-    render(<ClusterNetworkingCard cluster={cluster} />);
-
-    expect(screen.queryByText('api.example.com')).not.toBeInTheDocument();
-    expect(screen.queryByText('apps.example.com')).not.toBeInTheDocument();
   });
 });

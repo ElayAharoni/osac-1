@@ -171,7 +171,6 @@ const ClusterDetailsPageContent = ({ cluster }: ClusterDetailViewProps) => {
           clusterId={cluster.id}
           endpoint={attachEndpoint}
           onClose={() => setAttachEndpoint(undefined)}
-          onSuccess={() => setAttachEndpoint(undefined)}
         />
       )}
       {detachAttachment &&

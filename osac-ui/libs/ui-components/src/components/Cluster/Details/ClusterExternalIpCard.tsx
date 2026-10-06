@@ -60,9 +60,6 @@ export interface ClusterExternalIpCardProps {
   onDetach?: (attachment: ExternalIPAttachment) => void;
 }
 
-const isTerminalFailedState = (state: ClusterState | undefined): boolean =>
-  state === ClusterState.FAILED || state === ClusterState.DELETE_FAILED;
-
 const attachmentStateLabel = (
   state: ExternalIPAttachmentState | undefined,
   t: (key: string) => string,
@@ -72,8 +69,6 @@ const attachmentStateLabel = (
       return t('Attaching');
     case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED:
       return t('Failed');
-    case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY:
-      return t('Attached');
     case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING:
       return t('Detaching');
     default:
@@ -112,11 +107,9 @@ const EndpointRow = ({
       : cluster.status?.ingressEndpoint;
   const endpointText = endpointValue?.trim()
     ? endpointValue.trim()
-    : isTerminalFailedState(clusterState)
-      ? '—'
-      : clusterState === ClusterState.PROGRESSING
-        ? t('Awaiting provisioning')
-        : '—';
+    : clusterState === ClusterState.PROGRESSING
+      ? t('Awaiting provisioning')
+      : '—';
   const label =
     endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
       ? t('API endpoint')
