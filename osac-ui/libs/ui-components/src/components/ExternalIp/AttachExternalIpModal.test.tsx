@@ -30,14 +30,12 @@ const attachedIp = {
 } as ExternalIP;
 
 const renderModal = ({
-  endpointOccupied = false,
   onAttach = vi.fn().mockResolvedValue(undefined),
   onClose = vi.fn(),
   onSuccess = vi.fn(),
   externalIps = [eligibleIp],
   transportOverrides,
 }: {
-  endpointOccupied?: boolean;
   onAttach?: (externalIpId: string) => Promise<unknown>;
   onClose?: () => void;
   onSuccess?: () => void;
@@ -48,8 +46,6 @@ const renderModal = ({
     <AttachExternalIpModal
       title="Attach external IP"
       emptyDescription="Create an external IP first, then attach it to this endpoint."
-      endpointOccupied={endpointOccupied}
-      occupiedMessage="This endpoint already has an external IP attached."
       onAttach={onAttach}
       onClose={onClose}
       onSuccess={onSuccess}
@@ -127,14 +123,5 @@ describe('AttachExternalIpModal', () => {
     expect(onSuccess).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Attach$/ })).toBeEnabled();
-  });
-
-  it('prevents submission when the endpoint is already occupied', () => {
-    renderModal({ endpointOccupied: true });
-
-    expect(
-      screen.getByText('This endpoint already has an external IP attached.'),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Attach$/ })).toBeDisabled();
   });
 });

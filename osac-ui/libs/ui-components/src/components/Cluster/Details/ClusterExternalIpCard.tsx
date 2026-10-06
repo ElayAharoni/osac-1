@@ -32,7 +32,6 @@ import QueryErrorState from '../../Resource/QueryErrorState';
 
 export interface EndpointAttachmentStatus {
   attachment: ExternalIPAttachment | undefined;
-  externalIpAddress: string | undefined;
 }
 
 export interface ClusterEndpointAttachments {
@@ -43,20 +42,16 @@ export interface ClusterEndpointAttachments {
 export const groupAttachmentsByEndpoint = (
   attachments: readonly ExternalIPAttachment[],
 ): ClusterEndpointAttachments => {
-  let api: EndpointAttachmentStatus = { attachment: undefined, externalIpAddress: undefined };
-  let ingress: EndpointAttachmentStatus = { attachment: undefined, externalIpAddress: undefined };
+  let api: EndpointAttachmentStatus = { attachment: undefined };
+  let ingress: EndpointAttachmentStatus = { attachment: undefined };
 
   for (const attachment of attachments) {
     const endpoint = attachment.spec?.targetEndpoint;
-    const ipAddress =
-      attachment.status?.state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY
-        ? attachment.status.externalIpAddress
-        : undefined;
 
     if (endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API) {
-      api = { attachment, externalIpAddress: ipAddress };
+      api = { attachment };
     } else if (endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS) {
-      ingress = { attachment, externalIpAddress: ipAddress };
+      ingress = { attachment };
     }
   }
 

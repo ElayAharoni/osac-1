@@ -82,10 +82,18 @@ func createBareMetalInstanceInState(
 	ctx context.Context,
 	bareMetalInstanceDao *dao.GenericDAO[*privatev1.BareMetalInstance],
 ) *privatev1.BareMetalInstance {
+	return createBareMetalInstanceInTenant(ctx, bareMetalInstanceDao, testTenant)
+}
+
+func createBareMetalInstanceInTenant(
+	ctx context.Context,
+	bareMetalInstanceDao *dao.GenericDAO[*privatev1.BareMetalInstance],
+	tenant string,
+) *privatev1.BareMetalInstance {
 	resp, err := bareMetalInstanceDao.Create().SetObject(
 		privatev1.BareMetalInstance_builder{
 			Metadata: privatev1.Metadata_builder{
-				Tenant: testTenant,
+				Tenant: tenant,
 				Name:   fmt.Sprintf("test-%s", uuid.NewString()[:8]),
 			}.Build(),
 			Spec: privatev1.BareMetalInstanceSpec_builder{
@@ -890,6 +898,30 @@ var _ = Describe("Private external IP attachments server", func() {
 	})
 
 	Describe("Target reference validation", func() {
+		It("Rejects Create when ComputeInstance belongs to another tenant", func() {
+			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
+				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
+			ci := createComputeInstanceInTenant(ctx, computeInstanceDao,
+				privatev1.ComputeInstanceState_COMPUTE_INSTANCE_STATE_RUNNING, auth.SharedTenant)
+
+			_, err := server.Create(ctx, privatev1.ExternalIPAttachmentsCreateRequest_builder{
+				Object: privatev1.ExternalIPAttachment_builder{
+					Metadata: privatev1.Metadata_builder{
+						Name:   fmt.Sprintf("test-%s", uuid.NewString()[:8]),
+						Tenant: testTenant,
+					}.Build(),
+					Spec: privatev1.ExternalIPAttachmentSpec_builder{
+						ExternalIp:      privatev1.ExternalIPLocalReference_builder{Id: eip.GetId()}.Build(),
+						ComputeInstance: privatev1.ComputeInstanceLocalReference_builder{Id: ci.GetId()}.Build(),
+					}.Build(),
+				}.Build(),
+			}.Build())
+			Expect(err).To(HaveOccurred())
+			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.InvalidArgument))
+			Expect(err).To(MatchError(ContainSubstring("ComputeInstance")))
+			Expect(err).To(MatchError(ContainSubstring("belongs to tenant")))
+		})
+
 		It("Rejects Create when Cluster belongs to another tenant", func() {
 			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
 				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
@@ -922,6 +954,29 @@ var _ = Describe("Private external IP attachments server", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.InvalidArgument))
 			Expect(err).To(MatchError(ContainSubstring("Cluster")))
+			Expect(err).To(MatchError(ContainSubstring("belongs to tenant")))
+		})
+
+		It("Rejects Create when BareMetalInstance belongs to another tenant", func() {
+			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
+				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
+			bmi := createBareMetalInstanceInTenant(ctx, bareMetalInstanceDao, auth.SharedTenant)
+
+			_, err := server.Create(ctx, privatev1.ExternalIPAttachmentsCreateRequest_builder{
+				Object: privatev1.ExternalIPAttachment_builder{
+					Metadata: privatev1.Metadata_builder{
+						Name:   fmt.Sprintf("test-%s", uuid.NewString()[:8]),
+						Tenant: testTenant,
+					}.Build(),
+					Spec: privatev1.ExternalIPAttachmentSpec_builder{
+						ExternalIp:        privatev1.ExternalIPLocalReference_builder{Id: eip.GetId()}.Build(),
+						BaremetalInstance: privatev1.BareMetalInstanceLocalReference_builder{Id: bmi.GetId()}.Build(),
+					}.Build(),
+				}.Build(),
+			}.Build())
+			Expect(err).To(HaveOccurred())
+			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.InvalidArgument))
+			Expect(err).To(MatchError(ContainSubstring("BareMetalInstance")))
 			Expect(err).To(MatchError(ContainSubstring("belongs to tenant")))
 		})
 
