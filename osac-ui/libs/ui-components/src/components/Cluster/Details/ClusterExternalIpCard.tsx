@@ -48,12 +48,6 @@ export const groupAttachmentsByEndpoint = (
   let ingress: EndpointAttachmentStatus = { attachment: undefined, externalIpAddress: undefined };
 
   for (const attachment of attachments) {
-    if (
-      attachment.status?.state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING
-    ) {
-      continue;
-    }
-
     const endpoint = attachment.spec?.targetEndpoint;
     const ipAddress =
       attachment.status?.state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY
@@ -90,10 +84,18 @@ const attachmentStateLabel = (
       return t('Failed');
     case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY:
       return t('Attached');
+    case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING:
+      return t('Detaching');
     default:
       return t('External IP attachment pending');
   }
 };
+
+const isAttachmentBusyState = (state: ExternalIPAttachmentState | undefined): boolean =>
+  state === undefined ||
+  state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_UNSPECIFIED ||
+  state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_PENDING ||
+  state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING;
 
 interface EndpointRowProps {
   cluster: Cluster;
@@ -128,6 +130,13 @@ const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: Endpoint
       : t('Detach External IP from Ingress endpoint');
   const attachmentState = attachment?.status?.state;
   const isReady = attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY;
+  const isAttachmentInProgress = attachment !== undefined && isAttachmentBusyState(attachmentState);
+  const isAutoAttachmentInProgress =
+    cluster.spec?.autoExternalIpAttachment === true &&
+    (attachment === undefined ||
+      isAttachmentBusyState(attachmentState) ||
+      attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED);
+  const isActionDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
   const externalIpText =
     status.externalIpAddress || attachment?.spec?.externalIp?.id || displayValue(undefined);
 
@@ -174,6 +183,7 @@ const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: Endpoint
                     variant="link"
                     isInline
                     aria-label={detachAriaLabel}
+                    isDisabled={isActionDisabled}
                     onClick={() => onDetach?.(attachment)}
                   >
                     {t('Detach')}
@@ -191,6 +201,7 @@ const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: Endpoint
                     variant="link"
                     isInline
                     aria-label={t('Attach External IP')}
+                    isDisabled={isActionDisabled}
                     onClick={() => onAttach?.(endpoint)}
                   >
                     {t('Attach External IP')}

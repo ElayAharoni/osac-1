@@ -295,6 +295,7 @@
   "Detach External IP from API endpoint": "Detach External IP from API endpoint",
   "Detach External IP from Ingress endpoint": "Detach External IP from Ingress endpoint",
   "Detach this external IP before deleting it.": "Detach this external IP before deleting it.",
+  "Detaching": "Detaching",
   "Detaching external IP": "Detaching external IP",
   "Details": "Details",
   "Disable": "Disable",
