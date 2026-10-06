@@ -890,6 +890,41 @@ var _ = Describe("Private external IP attachments server", func() {
 	})
 
 	Describe("Target reference validation", func() {
+		It("Rejects Create when Cluster belongs to another tenant", func() {
+			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
+				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
+			clusterResponse, err := clusterDao.Create().SetObject(
+				privatev1.Cluster_builder{
+					Metadata: privatev1.Metadata_builder{
+						Tenant: auth.SharedTenant,
+						Name:   fmt.Sprintf("test-%s", uuid.NewString()[:8]),
+					}.Build(),
+					Spec: privatev1.ClusterSpec_builder{
+						Template: privatev1.ClusterTemplateReference_builder{Id: "ocp_small"}.Build(),
+					}.Build(),
+				}.Build(),
+			).Do(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = server.Create(ctx, privatev1.ExternalIPAttachmentsCreateRequest_builder{
+				Object: privatev1.ExternalIPAttachment_builder{
+					Metadata: privatev1.Metadata_builder{
+						Name:   fmt.Sprintf("test-%s", uuid.NewString()[:8]),
+						Tenant: testTenant,
+					}.Build(),
+					Spec: privatev1.ExternalIPAttachmentSpec_builder{
+						ExternalIp:     privatev1.ExternalIPLocalReference_builder{Id: eip.GetId()}.Build(),
+						Cluster:        privatev1.ClusterLocalReference_builder{Id: clusterResponse.GetObject().GetId()}.Build(),
+						TargetEndpoint: privatev1.ExternalIPAttachmentEndpoint_EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+					}.Build(),
+				}.Build(),
+			}.Build())
+			Expect(err).To(HaveOccurred())
+			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.InvalidArgument))
+			Expect(err).To(MatchError(ContainSubstring("Cluster")))
+			Expect(err).To(MatchError(ContainSubstring("belongs to tenant")))
+		})
+
 		It("Rejects Create when ComputeInstance does not exist", func() {
 			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
 				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
