@@ -223,7 +223,7 @@ func (s *PrivateExternalIPAttachmentsServer) Create(ctx context.Context,
 	if err != nil {
 		return
 	}
-	if err = validateTenantProjectMatch(attachmentTenant, attachmentProject, externalIP, "ExternalIP", externalIPKey); err != nil {
+	if err = validateExternalIPScope(attachmentTenant, attachmentProject, externalIPKey, externalIP); err != nil {
 		return
 	}
 
@@ -536,6 +536,11 @@ func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(
 	return validateTenantProjectMatch(attachmentTenant, attachmentProject, response.GetObject(), "BareMetalInstance", key)
 }
 
+func validateExternalIPScope(attachmentTenant, attachmentProject, externalIPKey string,
+	externalIP *privatev1.ExternalIP) error {
+	return validateTenantProjectMatch(attachmentTenant, attachmentProject, externalIP, "ExternalIP", externalIPKey)
+}
+
 func (s *PrivateExternalIPAttachmentsServer) validateAttachmentReferences(
 	ctx context.Context, attachment *privatev1.ExternalIPAttachment) error {
 	metadata := attachment.GetMetadata()
@@ -553,8 +558,8 @@ func (s *PrivateExternalIPAttachmentsServer) validateAttachmentReferences(
 	if err != nil {
 		return err
 	}
-	if err = validateTenantProjectMatch(attachmentTenant, attachmentProject,
-		externalIPResponse.GetObject(), "ExternalIP", externalIPKey); err != nil {
+	if err = validateExternalIPScope(attachmentTenant, attachmentProject, externalIPKey,
+		externalIPResponse.GetObject()); err != nil {
 		return err
 	}
 
