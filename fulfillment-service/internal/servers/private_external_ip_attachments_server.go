@@ -223,7 +223,7 @@ func (s *PrivateExternalIPAttachmentsServer) Create(ctx context.Context,
 		return
 	}
 
-	err = s.validateTargetReference(ctx, spec)
+	err = s.validateTargetReference(ctx, spec, attachmentTenant)
 	if err != nil {
 		return
 	}
@@ -446,12 +446,12 @@ func (s *PrivateExternalIPAttachmentsServer) validateExternalIPReference(
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateTargetReference(
-	ctx context.Context, spec *privatev1.ExternalIPAttachmentSpec) error {
+	ctx context.Context, spec *privatev1.ExternalIPAttachmentSpec, attachmentTenant string) error {
 	switch {
 	case spec.HasComputeInstance():
 		return s.validateComputeInstanceReference(ctx, spec.GetComputeInstance())
 	case spec.HasCluster():
-		return s.validateClusterReference(ctx, spec.GetCluster())
+		return s.validateClusterReference(ctx, spec.GetCluster(), attachmentTenant)
 	case spec.HasBaremetalInstance():
 		return s.validateBareMetalInstanceReference(ctx, spec.GetBaremetalInstance())
 	default:
@@ -482,9 +482,9 @@ func (s *PrivateExternalIPAttachmentsServer) validateComputeInstanceReference(
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateClusterReference(
-	ctx context.Context, ref *privatev1.ClusterLocalReference) error {
+	ctx context.Context, ref *privatev1.ClusterLocalReference, attachmentTenant string) error {
 	key := refKey(ref)
-	_, err := s.clusterDao.Get().
+	response, err := s.clusterDao.Get().
 		SetId(key).
 		SetLock(true).
 		Do(ctx)
@@ -499,7 +499,7 @@ func (s *PrivateExternalIPAttachmentsServer) validateClusterReference(
 			slog.Any("error", err))
 		return grpcstatus.Errorf(grpccodes.Internal, "failed to validate cluster")
 	}
-	return nil
+	return validateTenantMatch(attachmentTenant, response.GetObject(), "Cluster", key)
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(
