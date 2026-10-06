@@ -226,21 +226,31 @@ const matchesReadyStateFilter = (
   return state === VirtualNetworkState.READY;
 };
 
+const matchesStringEqualityFilter = (
+  filter: string | undefined,
+  field: string,
+  value: string | undefined,
+): boolean => {
+  const prefix = field + ' == "';
+  if (!filter?.startsWith(prefix)) {
+    return true;
+  }
+  if (!filter.endsWith('"')) {
+    return false;
+  }
+  const encodedValue = filter.slice(prefix.length, -1);
+  try {
+    return value === JSON.parse('"' + encodedValue + '"');
+  } catch {
+    return false;
+  }
+};
+
 const matchesVirtualNetworkScopeFilter = (
   filter: string | undefined,
   virtualNetwork: string | undefined,
 ): boolean => {
-  if (!filter) {
-    return true;
-  }
-  const match = filter.match(/this\.spec\.virtual_network\.id == "([^"]+)"/);
-  if (!match) {
-    return true;
-  }
-  if (!virtualNetwork) {
-    return false;
-  }
-  return virtualNetwork === match[1];
+  return matchesStringEqualityFilter(filter, 'this.spec.virtual_network.id', virtualNetwork);
 };
 
 const matchesUnallocatedExternalIpFilter = (
@@ -281,22 +291,6 @@ const matchesSpecExternalIpIdInFilter = (
   }
   const ids = JSON.parse(filter.slice(prefix.length)) as string[];
   return externalIpId !== undefined && ids.includes(externalIpId);
-};
-
-const matchesClusterAttachmentFilter = (
-  filter: string | undefined,
-  clusterId: string | undefined,
-): boolean => {
-  const prefix = 'this.spec.cluster.id == "';
-  if (!filter?.startsWith(prefix)) {
-    return true;
-  }
-  const encodedClusterId = filter.slice(prefix.length, -1);
-  try {
-    return clusterId === JSON.parse(`"${encodedClusterId}"`);
-  } catch {
-    return false;
-  }
 };
 
 const matchesInstanceTypeActiveFilter = (
@@ -1122,7 +1116,7 @@ export const createMockConnectTransport = (
               item.spec?.target?.case === 'cluster' ? item.spec.target.value.id : undefined;
             return (
               matchesSpecExternalIpIdInFilter(req.filter, item.spec?.externalIp?.id) &&
-              matchesClusterAttachmentFilter(req.filter, clusterId)
+              matchesStringEqualityFilter(req.filter, 'this.spec.cluster.id', clusterId)
             );
           });
           return {

@@ -13,6 +13,7 @@ import {
 import AttachExternalIpModal from './AttachExternalIpModal';
 import type { MockTransportOverrides } from '../../../test-utils/createMockConnectTransport';
 import { renderWithProviders } from '../../../test-utils/TestProviders';
+import { EXTERNAL_IP_PICKER_LIMIT } from '../../ExternalIp/AttachExternalIpModal';
 
 const eligibleIp = {
   id: 'eip-1',
@@ -102,6 +103,19 @@ describe('AttachExternalIpModal', () => {
 
     expect(screen.getByRole('option', { name: 'edge-ip' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'in-use-ip' })).not.toBeInTheDocument();
+  });
+
+  it('bounds the external IP list request', async () => {
+    let requestedLimit: number | undefined;
+    renderModal({
+      transportOverrides: {
+        onExternalIpList: (request) => {
+          requestedLimit = request.limit;
+        },
+      },
+    });
+
+    await waitFor(() => expect(requestedLimit).toBe(EXTERNAL_IP_PICKER_LIMIT));
   });
 
   it('shows an empty state and disables attach when no IP is available', async () => {
