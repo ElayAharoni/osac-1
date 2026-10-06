@@ -82,8 +82,8 @@ describe('groupAttachmentsByEndpoint', () => {
 
     const result = groupAttachmentsByEndpoint([apiAttachment, ingressAttachment]);
 
-    expect(result.api.attachment).toBe(apiAttachment);
-    expect(result.ingress.attachment).toBe(ingressAttachment);
+    expect(result.api).toBe(apiAttachment);
+    expect(result.ingress).toBe(ingressAttachment);
   });
 
   it('keeps an endpoint occupied while its attachment is deleting', () => {
@@ -95,7 +95,7 @@ describe('groupAttachmentsByEndpoint', () => {
 
     const result = groupAttachmentsByEndpoint([deletingAttachment]);
 
-    expect(result.api.attachment).toBe(deletingAttachment);
+    expect(result.api).toBe(deletingAttachment);
   });
 });
 

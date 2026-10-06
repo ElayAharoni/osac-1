@@ -32,13 +32,6 @@ export const useExternalIPAttachments = (
   });
 };
 
-export const invalidateExternalIPAttachmentQueries = async (qc: ApiQueryClient) => {
-  await Promise.all([
-    qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
-    qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ips') }),
-  ]);
-};
-
 export const generateExternalIpAttachmentName = (): string => `eipa-${crypto.randomUUID()}`;
 
 const invalidateExternalIPAttachmentCaches = async (
@@ -46,7 +39,8 @@ const invalidateExternalIPAttachmentCaches = async (
   invalidateServiceQueries: ReturnType<typeof useInvalidateServiceQueries>,
 ) => {
   await Promise.all([
-    invalidateExternalIPAttachmentQueries(qc),
+    qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
+    qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ips') }),
     invalidateServiceQueries(ExternalIPs),
   ]);
 };
