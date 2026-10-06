@@ -40,7 +40,6 @@ const invalidateExternalIPAttachmentCaches = async (
 ) => {
   await Promise.all([
     qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
-    qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ips') }),
     invalidateServiceQueries(ExternalIPs),
   ]);
 };

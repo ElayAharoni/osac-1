@@ -40,7 +40,7 @@ const attachmentInput = create(ExternalIPAttachmentSchema, {
 });
 
 describe('ExternalIP attachment mutations', () => {
-  it('creates an attachment and invalidates attachment and ExternalIP queries', async () => {
+  it('creates an attachment and invalidates attachment and ExternalIP service queries', async () => {
     let capturedObject: unknown;
     const createdAttachment = create(ExternalIPAttachmentSchema, {
       ...attachmentInput,
@@ -59,7 +59,6 @@ describe('ExternalIP attachment mutations', () => {
     );
     const { queryClient, wrapper } = makeWrapper(transport);
     queryClient.setQueryData(apiQueryKey('v1/external_ip_attachments'), { items: [] });
-    queryClient.setQueryData(apiQueryKey('v1/external_ips'), { items: [] });
     queryClient.setQueryData([ExternalIPAttachments.typeName], {});
     queryClient.setQueryData([ExternalIPs.typeName], {});
 
@@ -75,12 +74,11 @@ describe('ExternalIP attachment mutations', () => {
     expect(
       queryClient.getQueryState(apiQueryKey('v1/external_ip_attachments'))?.isInvalidated,
     ).toBe(true);
-    expect(queryClient.getQueryState(apiQueryKey('v1/external_ips'))?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState([ExternalIPAttachments.typeName])?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState([ExternalIPs.typeName])?.isInvalidated).toBe(true);
   });
 
-  it('deletes an attachment and invalidates attachment and ExternalIP queries', async () => {
+  it('deletes an attachment and invalidates attachment and ExternalIP service queries', async () => {
     let capturedId: string | undefined;
     const transport = createMockConnectTransport(
       {},
@@ -93,7 +91,6 @@ describe('ExternalIP attachment mutations', () => {
     );
     const { queryClient, wrapper } = makeWrapper(transport);
     queryClient.setQueryData(apiQueryKey('v1/external_ip_attachments'), { items: [] });
-    queryClient.setQueryData(apiQueryKey('v1/external_ips'), { items: [] });
     queryClient.setQueryData([ExternalIPAttachments.typeName], {});
     queryClient.setQueryData([ExternalIPs.typeName], {});
 
@@ -107,7 +104,6 @@ describe('ExternalIP attachment mutations', () => {
     expect(
       queryClient.getQueryState(apiQueryKey('v1/external_ip_attachments'))?.isInvalidated,
     ).toBe(true);
-    expect(queryClient.getQueryState(apiQueryKey('v1/external_ips'))?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState([ExternalIPAttachments.typeName])?.isInvalidated).toBe(true);
     expect(queryClient.getQueryState([ExternalIPs.typeName])?.isInvalidated).toBe(true);
   });

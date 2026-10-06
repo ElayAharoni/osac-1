@@ -23,7 +23,6 @@ export interface ExternalIpAttachModalProps {
   emptyDescription: string;
   onAttach: (externalIpId: string) => Promise<unknown>;
   onClose: () => void;
-  fieldId?: string;
 }
 
 interface FormValues {
@@ -42,7 +41,6 @@ const ExternalIpAttachModal = ({
   emptyDescription,
   onAttach,
   onClose,
-  fieldId = 'attach-external-ip',
 }: ExternalIpAttachModalProps) => {
   const { t } = useTranslation();
   const [submitError, setSubmitError] = useState<unknown>();
@@ -77,7 +75,7 @@ const ExternalIpAttachModal = ({
               <ResourceSelectField
                 name="externalIp"
                 label={t('External IP')}
-                fieldId={fieldId}
+                fieldId="attach-external-ip"
                 service={ExternalIPs}
                 request={{ filter: unallocatedExternalIpFilter(), limit: EXTERNAL_IP_PICKER_LIMIT }}
                 isRequired

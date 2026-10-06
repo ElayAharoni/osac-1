@@ -908,14 +908,12 @@ var _ = Describe("Private external IP attachments server", func() {
 	Describe("Target reference validation", func() {
 		It("Rejects Create when the target belongs to another tenant", func() {
 			targets := []struct {
-				name         string
-				targetType   string
+				kind         string
 				createTarget func() string
 				setTarget    func(*privatev1.ExternalIPAttachmentSpec_builder, string)
 			}{
 				{
-					name:       "ComputeInstance",
-					targetType: "ComputeInstance",
+					kind: "ComputeInstance",
 					createTarget: func() string {
 						return createComputeInstanceInTenant(ctx, computeInstanceDao,
 							privatev1.ComputeInstanceState_COMPUTE_INSTANCE_STATE_RUNNING,
@@ -926,8 +924,7 @@ var _ = Describe("Private external IP attachments server", func() {
 					},
 				},
 				{
-					name:       "Cluster",
-					targetType: "Cluster",
+					kind: "Cluster",
 					createTarget: func() string {
 						return createClusterInTenant(ctx, clusterDao, auth.SharedTenant).GetId()
 					},
@@ -937,8 +934,7 @@ var _ = Describe("Private external IP attachments server", func() {
 					},
 				},
 				{
-					name:       "BareMetalInstance",
-					targetType: "BareMetalInstance",
+					kind: "BareMetalInstance",
 					createTarget: func() string {
 						return createBareMetalInstanceInTenant(ctx, bareMetalInstanceDao, auth.SharedTenant).GetId()
 					},
@@ -949,7 +945,7 @@ var _ = Describe("Private external IP attachments server", func() {
 			}
 
 			for _, target := range targets {
-				By("rejecting " + target.name + " targets")
+				By("rejecting " + target.kind + " targets")
 				eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
 					privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
 				spec := privatev1.ExternalIPAttachmentSpec_builder{
@@ -968,7 +964,7 @@ var _ = Describe("Private external IP attachments server", func() {
 				}.Build())
 				Expect(err).To(HaveOccurred())
 				Expect(grpcstatus.Code(err)).To(Equal(grpccodes.InvalidArgument))
-				Expect(err).To(MatchError(ContainSubstring(target.targetType)))
+				Expect(err).To(MatchError(ContainSubstring(target.kind)))
 				Expect(err).To(MatchError(ContainSubstring("belongs to tenant")))
 			}
 		})
