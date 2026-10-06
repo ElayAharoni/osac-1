@@ -56,8 +56,8 @@ export const groupAttachmentsByEndpoint = (
 
 export interface ClusterExternalIpCardProps {
   cluster: Cluster;
-  onAttach?: (endpoint: ExternalIPAttachmentEndpoint) => void;
-  onDetach?: (attachment: ExternalIPAttachment) => void;
+  onAttach: (endpoint: ExternalIPAttachmentEndpoint) => void;
+  onDetach: (attachment: ExternalIPAttachment) => void;
 }
 
 const attachmentStateLabel = (
@@ -86,45 +86,38 @@ interface EndpointRowProps {
   autoAttachmentRequested: boolean;
   cluster: Cluster;
   endpoint: ExternalIPAttachmentEndpoint;
+  endpointValue?: string;
+  label: string;
+  detachAriaLabel: string;
   attachment: ExternalIPAttachment | undefined;
-  onAttach?: (endpoint: ExternalIPAttachmentEndpoint) => void;
-  onDetach?: (attachment: ExternalIPAttachment) => void;
+  onAttach: (endpoint: ExternalIPAttachmentEndpoint) => void;
+  onDetach: (attachment: ExternalIPAttachment) => void;
 }
 
 const EndpointRow = ({
   autoAttachmentRequested,
   cluster,
   endpoint,
+  endpointValue,
+  label,
+  detachAriaLabel,
   attachment,
   onAttach,
   onDetach,
 }: EndpointRowProps) => {
   const { t } = useTranslation();
   const clusterState = cluster.status?.state;
-  const endpointValue =
-    endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
-      ? cluster.status?.apiEndpoint
-      : cluster.status?.ingressEndpoint;
   const endpointText = endpointValue?.trim()
     ? endpointValue.trim()
     : clusterState === ClusterState.PROGRESSING
       ? t('Awaiting provisioning')
       : '—';
-  const label =
-    endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
-      ? t('API endpoint')
-      : t('Ingress endpoint');
-  const detachAriaLabel =
-    endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
-      ? t('Detach External IP from API endpoint')
-      : t('Detach External IP from Ingress endpoint');
   const attachmentState = attachment?.status?.state;
   const isReady = attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY;
   const isAttachmentInProgress = attachment !== undefined && isAttachmentBusyState(attachmentState);
   const isAutoAttachmentInProgress =
     autoAttachmentRequested &&
-    (attachment === undefined ||
-      isAttachmentBusyState(attachmentState) ||
+    (isAttachmentBusyState(attachmentState) ||
       attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED);
   const isActionDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
   const autoAttachmentLabel = isReady ? t('Auto attached') : t('Auto attaching in progress');
@@ -157,7 +150,7 @@ const EndpointRow = ({
       isInline
       aria-label={detachAriaLabel}
       isDisabled={isActionDisabled}
-      onClick={() => onDetach?.(attachment)}
+      onClick={() => onDetach(attachment)}
     >
       {t('Detach')}
     </Button>
@@ -167,7 +160,7 @@ const EndpointRow = ({
       isInline
       aria-label={t('Attach External IP')}
       isDisabled={isActionDisabled}
-      onClick={() => onAttach?.(endpoint)}
+      onClick={() => onAttach(endpoint)}
     >
       {t('Attach External IP')}
     </Button>
@@ -213,6 +206,22 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
   );
   const grouped = groupAttachmentsByEndpoint(attachments);
   const autoAttachmentRequested = cluster.spec?.autoExternalIpAttachment === true;
+  const endpointRows = [
+    {
+      endpoint: ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+      endpointValue: cluster.status?.apiEndpoint,
+      label: t('API endpoint'),
+      detachAriaLabel: t('Detach External IP from API endpoint'),
+      attachment: grouped.api,
+    },
+    {
+      endpoint: ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS,
+      endpointValue: cluster.status?.ingressEndpoint,
+      label: t('Ingress endpoint'),
+      detachAriaLabel: t('Detach External IP from Ingress endpoint'),
+      attachment: grouped.ingress,
+    },
+  ];
 
   return (
     <Card variant="secondary">
@@ -229,22 +238,16 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
           <QueryErrorState error={error} title={t('Failed to load external IP attachments')} />
         ) : (
           <DescriptionList isCompact aria-label={t('External IP endpoints')}>
-            <EndpointRow
-              autoAttachmentRequested={autoAttachmentRequested}
-              cluster={cluster}
-              endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API}
-              attachment={grouped.api}
-              onAttach={onAttach}
-              onDetach={onDetach}
-            />
-            <EndpointRow
-              autoAttachmentRequested={autoAttachmentRequested}
-              cluster={cluster}
-              endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS}
-              attachment={grouped.ingress}
-              onAttach={onAttach}
-              onDetach={onDetach}
-            />
+            {endpointRows.map((row) => (
+              <EndpointRow
+                key={row.endpoint}
+                autoAttachmentRequested={autoAttachmentRequested}
+                cluster={cluster}
+                {...row}
+                onAttach={onAttach}
+                onDetach={onDetach}
+              />
+            ))}
           </DescriptionList>
         )}
       </CardBody>

@@ -148,7 +148,7 @@ describe('ClusterExternalIpCard', () => {
     );
     mockUseExternalIPAttachments([attachment]);
 
-    render(<ClusterExternalIpCard cluster={makeCluster()} onDetach={vi.fn()} />);
+    render(<ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
     expect(
       screen.getByRole('button', { name: 'Detach External IP from API endpoint' }),
@@ -167,7 +167,7 @@ describe('ClusterExternalIpCard', () => {
     });
     mockUseExternalIPAttachments();
 
-    render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} />);
+    render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
     expect(screen.getAllByText('Auto attaching in progress')).toHaveLength(2);
     expect(screen.queryByText('Auto-provisioned')).not.toBeInTheDocument();
@@ -199,7 +199,7 @@ describe('ClusterExternalIpCard', () => {
     });
     mockUseExternalIPAttachments([pendingApiAttachment, deletingIngressAttachment]);
 
-    render(<ClusterExternalIpCard cluster={autoCluster} onDetach={vi.fn()} />);
+    render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
     expect(screen.getAllByText('Auto attaching in progress')).toHaveLength(2);
     expect(screen.queryByText('Attaching')).not.toBeInTheDocument();
@@ -222,7 +222,7 @@ describe('ClusterExternalIpCard', () => {
     });
     mockUseExternalIPAttachments([attachment]);
 
-    render(<ClusterExternalIpCard cluster={autoCluster} onDetach={vi.fn()} />);
+    render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
     expect(screen.getByText('Auto attached')).toBeInTheDocument();
     expect(screen.getByText('Auto attaching in progress')).toBeInTheDocument();

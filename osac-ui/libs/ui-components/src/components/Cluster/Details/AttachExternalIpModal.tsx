@@ -25,7 +25,6 @@ const AttachExternalIpModal = ({ clusterId, endpoint, onClose }: AttachExternalI
     <ExternalIpAttachModal
       title={title}
       emptyDescription={t('Create an external IP first, then attach it to this cluster endpoint.')}
-      fieldId="attach-cluster-external-ip"
       onAttach={(externalIpId) =>
         createAttachment.mutateAsync({
           object: {
