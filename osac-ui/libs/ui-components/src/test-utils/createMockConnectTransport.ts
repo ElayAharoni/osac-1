@@ -24,6 +24,8 @@ import {
   ExternalIPAttachment,
   ExternalIPAttachmentsCreateRequest,
   ExternalIPAttachmentsCreateResponse,
+  ExternalIPAttachmentsDeleteRequest,
+  ExternalIPAttachmentsDeleteResponse,
   ExternalIPsCreateRequest,
   ExternalIPsCreateResponse,
   ExternalIPsListRequest,
@@ -282,6 +284,22 @@ const matchesSpecExternalIpIdInFilter = (
   return externalIpId !== undefined && ids.includes(externalIpId);
 };
 
+const matchesClusterAttachmentFilter = (
+  filter: string | undefined,
+  clusterId: string | undefined,
+): boolean => {
+  const prefix = 'this.spec.cluster.id == "';
+  if (!filter?.startsWith(prefix)) {
+    return true;
+  }
+  const encodedClusterId = filter.slice(prefix.length, -1);
+  try {
+    return clusterId === JSON.parse(`"${encodedClusterId}"`);
+  } catch {
+    return false;
+  }
+};
+
 const matchesInstanceTypeActiveFilter = (
   filter: string | undefined,
   state: number | undefined,
@@ -449,6 +467,9 @@ export type MockTransportOverrides = {
   onExternalIpAttachmentCreate?: (
     req: ExternalIPAttachmentsCreateRequest,
   ) => ExternalIPAttachmentsCreateResponse | Promise<ExternalIPAttachmentsCreateResponse>;
+  onExternalIpAttachmentDelete?: (
+    req: ExternalIPAttachmentsDeleteRequest,
+  ) => ExternalIPAttachmentsDeleteResponse | Promise<ExternalIPAttachmentsDeleteResponse>;
   onVolumeGet?: (req: VolumesGetRequest) => VolumesGetResponse | Promise<VolumesGetResponse>;
   onVolumeCreate?: (req: VolumesCreateRequest) => VolumesCreateResponse;
   onVolumeDelete?: (req: VolumesDeleteRequest) => VolumesDeleteResponse;
@@ -1087,9 +1108,14 @@ export const createMockConnectTransport = (
 
       router.service(ExternalIPAttachments, {
         list: (req) => {
-          const items = externalIpAttachments.filter((item) =>
-            matchesSpecExternalIpIdInFilter(req.filter, item.spec?.externalIp?.id),
-          );
+          const items = externalIpAttachments.filter((item) => {
+            const clusterId =
+              item.spec?.target?.case === 'cluster' ? item.spec.target.value.id : undefined;
+            return (
+              matchesSpecExternalIpIdInFilter(req.filter, item.spec?.externalIp?.id) &&
+              matchesClusterAttachmentFilter(req.filter, clusterId)
+            );
+          });
           return {
             items,
             size: items.length,
@@ -1109,6 +1135,16 @@ export const createMockConnectTransport = (
           } as ExternalIPAttachment;
           externalIpAttachments.push(created);
           return { object: created };
+        },
+        delete: async (req) => {
+          if (overrides.onExternalIpAttachmentDelete) {
+            return overrides.onExternalIpAttachmentDelete(req);
+          }
+          const index = externalIpAttachments.findIndex((item) => item.id === req.id);
+          if (index >= 0) {
+            externalIpAttachments.splice(index, 1);
+          }
+          return {};
         },
       });
 
