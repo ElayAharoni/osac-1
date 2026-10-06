@@ -1,5 +1,6 @@
 import { create } from '@bufbuild/protobuf';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -137,6 +138,34 @@ describe('ClusterExternalIpCard', () => {
     ).toBeInTheDocument();
     expect(screen.getAllByText('Not attached')).toHaveLength(1);
     expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(1);
+  });
+
+  it('sends the endpoint-specific action to the details tab', async () => {
+    const onAttach = vi.fn();
+    const onDetach = vi.fn();
+    const user = userEvent.setup();
+    mockUseExternalIPAttachments();
+
+    const { rerender } = render(
+      <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'Attach External IP' })[0]);
+    expect(onAttach).toHaveBeenCalledWith(
+      ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+    );
+
+    const attachment = makeAttachment(
+      ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+      '203.0.113.10',
+    );
+    mockUseExternalIPAttachments([attachment]);
+    rerender(
+      <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Detach External IP from API endpoint' }));
+    expect(onDetach).toHaveBeenCalledWith(attachment);
   });
 
   it('keeps lifecycle attachments occupied and displays their status message', () => {
