@@ -37,13 +37,24 @@ const errorCases = [
 
 type FormValues = { name: string };
 
-const renderFooter = (error: unknown, onSubmit: () => Promise<void> = () => Promise.resolve()) =>
+const renderFooter = (
+  error: unknown,
+  onSubmit: () => Promise<void> = () => Promise.resolve(),
+  isEdit = false,
+) =>
   renderWithProviders(
     <Formik<FormValues> initialValues={{ name: '' }} onSubmit={onSubmit}>
       <FieldValidationProvider>
         <Wizard
           navAriaLabel="Wizard steps"
-          footer={<OSACWizardFooter onCancel={vi.fn()} stepHasErrors={() => false} error={error} />}
+          footer={
+            <OSACWizardFooter
+              onCancel={vi.fn()}
+              stepHasErrors={() => false}
+              isEdit={isEdit}
+              error={error}
+            />
+          }
         >
           <WizardStep id="review" name="Review">
             <div />
@@ -68,6 +79,22 @@ describe('OSACWizardFooter', () => {
       expect(alert).toHaveTextContent(expectedMessage);
     },
   );
+
+  it('preserves backend error messages in edit mode', () => {
+    const backendMessage = 'permission details from the backend';
+    renderFooter(
+      new ConnectError(backendMessage, Code.PermissionDenied),
+      () => Promise.resolve(),
+      true,
+    );
+
+    const alert = screen
+      .getByRole('heading', { name: 'Danger alert: Failed to edit resource' })
+      .closest('.pf-v6-c-alert');
+    expect(alert).toHaveClass('pf-m-danger');
+    expect(alert).toHaveTextContent(backendMessage);
+    expect(alert).not.toHaveTextContent('You are not authorized to access this resource.');
+  });
 
   it('disables the create button while Formik submission is pending', async () => {
     let resolveSubmit!: () => void;

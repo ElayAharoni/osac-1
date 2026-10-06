@@ -142,7 +142,7 @@ export const OSACWizardFooter = ({
                 (isEdit ? t('Failed to edit resource') : t('Failed to create resource'))
               }
             >
-              {getWizardErrorMessage(error, t)}
+              {isEdit ? getErrorMessage(error) : getWizardErrorMessage(error, t)}
             </Alert>
           </StackItem>
         )}
