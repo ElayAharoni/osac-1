@@ -326,7 +326,7 @@ func (s *PrivateExternalIPAttachmentsServer) Delete(ctx context.Context,
 		err = translateLifecycleError(getErr)
 		return
 	}
-	if err = s.validateAttachmentReferenceProjects(ctx, attachmentResponse.GetObject()); err != nil {
+	if err = s.validateAttachmentReferences(ctx, attachmentResponse.GetObject()); err != nil {
 		return
 	}
 
@@ -536,7 +536,7 @@ func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(
 	return validateTenantProjectMatch(attachmentTenant, attachmentProject, response.GetObject(), "BareMetalInstance", key)
 }
 
-func (s *PrivateExternalIPAttachmentsServer) validateAttachmentReferenceProjects(
+func (s *PrivateExternalIPAttachmentsServer) validateAttachmentReferences(
 	ctx context.Context, attachment *privatev1.ExternalIPAttachment) error {
 	metadata := attachment.GetMetadata()
 	if metadata == nil {
@@ -558,35 +558,7 @@ func (s *PrivateExternalIPAttachmentsServer) validateAttachmentReferenceProjects
 		return err
 	}
 
-	spec := attachment.GetSpec()
-	switch {
-	case spec.HasComputeInstance():
-		key := refKey(spec.GetComputeInstance())
-		response, getErr := s.computeInstanceDao.Get().SetId(key).Do(ctx)
-		if getErr != nil {
-			return getErr
-		}
-		return validateTenantProjectMatch(attachmentTenant, attachmentProject,
-			response.GetObject(), "ComputeInstance", key)
-	case spec.HasCluster():
-		key := refKey(spec.GetCluster())
-		response, getErr := s.clusterDao.Get().SetId(key).Do(ctx)
-		if getErr != nil {
-			return getErr
-		}
-		return validateTenantProjectMatch(attachmentTenant, attachmentProject,
-			response.GetObject(), "Cluster", key)
-	case spec.HasBaremetalInstance():
-		key := refKey(spec.GetBaremetalInstance())
-		response, getErr := s.bareMetalInstanceDao.Get().SetId(key).Do(ctx)
-		if getErr != nil {
-			return getErr
-		}
-		return validateTenantProjectMatch(attachmentTenant, attachmentProject,
-			response.GetObject(), "BareMetalInstance", key)
-	default:
-		return grpcstatus.Errorf(grpccodes.InvalidArgument, "external IP attachment has no target reference")
-	}
+	return s.validateTargetReference(ctx, attachment.GetSpec(), attachmentTenant, attachmentProject)
 }
 
 func (s *PrivateExternalIPAttachmentsServer) getTargetID(
