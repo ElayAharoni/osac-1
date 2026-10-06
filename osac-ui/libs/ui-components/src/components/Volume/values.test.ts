@@ -14,7 +14,7 @@ describe('getVolumeValues', () => {
       },
       spec: {
         storageTier: emptyResourceSelectValue(),
-        sizeGib: undefined,
+        sizeGib: '',
         accessMode: VolumeAccessMode.UNSPECIFIED,
       },
     });

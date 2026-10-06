@@ -11,7 +11,7 @@ export interface VolumeFormValues {
   };
   spec: {
     storageTier: ResourceSelectValue;
-    sizeGib: number | undefined;
+    sizeGib: string;
     accessMode: VolumeAccessMode;
   };
 }
@@ -23,7 +23,7 @@ export const getVolumeValues = (): VolumeFormValues => ({
   },
   spec: {
     storageTier: emptyResourceSelectValue(),
-    sizeGib: undefined,
+    sizeGib: '',
     accessMode: VolumeAccessMode.UNSPECIFIED,
   },
 });

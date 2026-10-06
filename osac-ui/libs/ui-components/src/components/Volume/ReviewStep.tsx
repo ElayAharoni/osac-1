@@ -49,7 +49,7 @@ const ReviewStep = () => {
           <DescriptionListGroup>
             <DescriptionListTerm>{t('Size (GiB)')}</DescriptionListTerm>
             <DescriptionListDescription>
-              {sizeGib !== undefined ? `${sizeGib} GiB` : '—'}
+              {sizeGib ? `${sizeGib} GiB` : '—'}
             </DescriptionListDescription>
           </DescriptionListGroup>
           <DescriptionListGroup>
