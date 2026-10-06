@@ -102,7 +102,7 @@ describe('groupAttachmentsByEndpoint', () => {
 });
 
 describe('ClusterExternalIpCard', () => {
-  it('renders both endpoint URLs and independent attach actions in a secondary card', () => {
+  it('renders both endpoint URLs and independent attach actions without empty-state text', () => {
     const onAttach = vi.fn();
     const onDetach = vi.fn();
     mockUseExternalIPAttachments();
@@ -115,7 +115,7 @@ describe('ClusterExternalIpCard', () => {
     expect(container.querySelector('.pf-v6-c-card.pf-m-secondary')).toBeInTheDocument();
     expect(screen.getByText('api.example.com')).toBeInTheDocument();
     expect(screen.getByText('apps.example.com')).toBeInTheDocument();
-    expect(screen.getAllByText('Not attached')).toHaveLength(2);
+    expect(screen.queryByText('Not attached')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(2);
   });
 
@@ -132,11 +132,13 @@ describe('ClusterExternalIpCard', () => {
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
     );
 
-    expect(screen.getByText('203.0.113.10')).toBeInTheDocument();
+    expect(screen.getByText('api.example.com')).toBeInTheDocument();
+    expect(screen.getByText('Attached')).toBeInTheDocument();
+    expect(screen.queryByText('203.0.113.10')).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Detach External IP from API endpoint' }),
     ).toBeInTheDocument();
-    expect(screen.getAllByText('Not attached')).toHaveLength(1);
+    expect(screen.queryByText('Not attached')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(1);
   });
 
@@ -155,7 +157,7 @@ describe('ClusterExternalIpCard', () => {
     ).toBeDisabled();
   });
 
-  it('disables attach while auto-provisioned endpoint attachments are pending', () => {
+  it('shows auto attachment progress and disables attach while auto-provisioned endpoints are pending', () => {
     const autoCluster = create(ClusterSchema, {
       id: 'cl-1',
       spec: { autoExternalIpAttachment: true },
@@ -169,11 +171,63 @@ describe('ClusterExternalIpCard', () => {
 
     render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} />);
 
-    expect(screen.getAllByText('Auto-provisioned')).toHaveLength(2);
+    expect(screen.getAllByText('Auto attaching in progress')).toHaveLength(2);
+    expect(screen.queryByText('Auto-provisioned')).not.toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(2);
     screen
       .getAllByRole('button', { name: 'Attach External IP' })
       .forEach((button) => expect(button).toBeDisabled());
+  });
+
+  it('uses only the auto status label while an auto attachment lifecycle is active', () => {
+    const pendingApiAttachment = makeAttachment(
+      ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+      '',
+      ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_PENDING,
+    );
+    const deletingIngressAttachment = makeAttachment(
+      ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS,
+      '',
+      ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING,
+    );
+    const autoCluster = create(ClusterSchema, {
+      id: 'cl-1',
+      spec: { autoExternalIpAttachment: true },
+      status: {
+        state: ClusterState.READY,
+        apiEndpoint: 'api.example.com',
+        ingressEndpoint: 'apps.example.com',
+      },
+    });
+    mockUseExternalIPAttachments([pendingApiAttachment, deletingIngressAttachment]);
+
+    render(<ClusterExternalIpCard cluster={autoCluster} onDetach={vi.fn()} />);
+
+    expect(screen.getAllByText('Auto attaching in progress')).toHaveLength(2);
+    expect(screen.queryByText('Attaching')).not.toBeInTheDocument();
+    expect(screen.queryByText('Detaching')).not.toBeInTheDocument();
+  });
+
+  it('shows auto attached after an auto-provisioned endpoint attachment is ready', () => {
+    const attachment = makeAttachment(
+      ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+      '203.0.113.10',
+    );
+    const autoCluster = create(ClusterSchema, {
+      id: 'cl-1',
+      spec: { autoExternalIpAttachment: true },
+      status: {
+        state: ClusterState.READY,
+        apiEndpoint: 'api.example.com',
+        ingressEndpoint: 'apps.example.com',
+      },
+    });
+    mockUseExternalIPAttachments([attachment]);
+
+    render(<ClusterExternalIpCard cluster={autoCluster} onDetach={vi.fn()} />);
+
+    expect(screen.getByText('Auto attached')).toBeInTheDocument();
+    expect(screen.getByText('Auto attaching in progress')).toBeInTheDocument();
   });
 
   it('sends the endpoint-specific action to the details tab', async () => {
@@ -216,7 +270,7 @@ describe('ClusterExternalIpCard', () => {
     render(<ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
     expect(screen.getByText('IP was already consumed')).toBeInTheDocument();
-    expect(screen.getAllByText('Not attached')).toHaveLength(1);
+    expect(screen.queryByText('Not attached')).not.toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Detach External IP from Ingress endpoint' }),
     ).toBeInTheDocument();

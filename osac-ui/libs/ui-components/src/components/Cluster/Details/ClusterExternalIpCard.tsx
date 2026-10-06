@@ -28,7 +28,6 @@ import type { ExternalIPAttachment } from '@osac/types';
 import { useExternalIPAttachments } from '../../../api/v1/external-ip';
 import { clusterAttachmentFilter } from '../../../api/v1/external-ip-data';
 import { useTranslation } from '../../../hooks/useTranslation';
-import { displayValue } from '../../../utils/detailFormatters';
 import QueryErrorState from '../../Resource/QueryErrorState';
 
 export interface EndpointAttachmentStatus {
@@ -98,6 +97,7 @@ const isAttachmentBusyState = (state: ExternalIPAttachmentState | undefined): bo
   state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING;
 
 interface EndpointRowProps {
+  autoAttachmentRequested: boolean;
   cluster: Cluster;
   endpoint: ExternalIPAttachmentEndpoint;
   status: EndpointAttachmentStatus;
@@ -105,7 +105,14 @@ interface EndpointRowProps {
   onDetach?: (attachment: ExternalIPAttachment) => void;
 }
 
-const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: EndpointRowProps) => {
+const EndpointRow = ({
+  autoAttachmentRequested,
+  cluster,
+  endpoint,
+  status,
+  onAttach,
+  onDetach,
+}: EndpointRowProps) => {
   const { t } = useTranslation();
   const clusterState = cluster.status?.state;
   const endpointValue =
@@ -132,84 +139,79 @@ const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: Endpoint
   const isReady = attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY;
   const isAttachmentInProgress = attachment !== undefined && isAttachmentBusyState(attachmentState);
   const isAutoAttachmentInProgress =
-    cluster.spec?.autoExternalIpAttachment === true &&
+    autoAttachmentRequested &&
     (attachment === undefined ||
       isAttachmentBusyState(attachmentState) ||
       attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED);
   const isActionDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
-  const externalIpText =
-    status.externalIpAddress || attachment?.spec?.externalIp?.id || displayValue(undefined);
+  const autoAttachmentLabel = isReady ? t('Auto attached') : t('Auto attaching in progress');
+  const attachmentContent =
+    attachment === undefined ? null : isReady ? (
+      !autoAttachmentRequested && (
+        <Label color="green" isCompact>
+          {t('Attached')}
+        </Label>
+      )
+    ) : !autoAttachmentRequested ? (
+      <Content component="p">
+        <Label
+          color={
+            attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED
+              ? 'red'
+              : 'orange'
+          }
+        >
+          {attachmentStateLabel(attachmentState, t)}
+        </Label>
+        {attachment.status?.message ? ` ${attachment.status.message}` : null}
+      </Content>
+    ) : attachment.status?.message ? (
+      <Content component="p">{attachment.status.message}</Content>
+    ) : null;
+  const actionButton = attachment ? (
+    <Button
+      variant="link"
+      isInline
+      aria-label={detachAriaLabel}
+      isDisabled={isActionDisabled}
+      onClick={() => onDetach?.(attachment)}
+    >
+      {t('Detach')}
+    </Button>
+  ) : (
+    <Button
+      variant="link"
+      isInline
+      aria-label={t('Attach External IP')}
+      isDisabled={isActionDisabled}
+      onClick={() => onAttach?.(endpoint)}
+    >
+      {t('Attach External IP')}
+    </Button>
+  );
 
   return (
     <DescriptionListGroup>
       <DescriptionListTerm>{label}</DescriptionListTerm>
       <DescriptionListDescription>
         <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }}>
-          <FlexItem>{endpointText}</FlexItem>
-          {cluster.spec?.autoExternalIpAttachment === true && (
-            <FlexItem>
-              <Label color="blue" isCompact>
-                {t('Auto-provisioned')}
-              </Label>
-            </FlexItem>
-          )}
           <FlexItem>
-            {attachment ? (
-              <Flex
-                alignItems={{ default: 'alignItemsCenter' }}
-                spaceItems={{ default: 'spaceItemsSm' }}
-              >
+            <Flex
+              alignItems={{ default: 'alignItemsCenter' }}
+              spaceItems={{ default: 'spaceItemsSm' }}
+            >
+              <FlexItem>{endpointText}</FlexItem>
+              {autoAttachmentRequested && (
                 <FlexItem>
-                  {isReady ? (
-                    <code>{externalIpText}</code>
-                  ) : (
-                    <Content component="p">
-                      <Label
-                        color={
-                          attachmentState ===
-                          ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED
-                            ? 'red'
-                            : 'orange'
-                        }
-                      >
-                        {attachmentStateLabel(attachmentState, t)}
-                      </Label>
-                      {attachment.status?.message ? ` ${attachment.status.message}` : null}
-                    </Content>
-                  )}
+                  <Label color="blue" isCompact>
+                    {autoAttachmentLabel}
+                  </Label>
                 </FlexItem>
-                <FlexItem>
-                  <Button
-                    variant="link"
-                    isInline
-                    aria-label={detachAriaLabel}
-                    isDisabled={isActionDisabled}
-                    onClick={() => onDetach?.(attachment)}
-                  >
-                    {t('Detach')}
-                  </Button>
-                </FlexItem>
-              </Flex>
-            ) : (
-              <Flex
-                alignItems={{ default: 'alignItemsCenter' }}
-                spaceItems={{ default: 'spaceItemsSm' }}
-              >
-                <FlexItem>{t('Not attached')}</FlexItem>
-                <FlexItem>
-                  <Button
-                    variant="link"
-                    isInline
-                    aria-label={t('Attach External IP')}
-                    isDisabled={isActionDisabled}
-                    onClick={() => onAttach?.(endpoint)}
-                  >
-                    {t('Attach External IP')}
-                  </Button>
-                </FlexItem>
-              </Flex>
-            )}
+              )}
+              {attachmentContent && <FlexItem>{attachmentContent}</FlexItem>}
+            </Flex>
           </FlexItem>
+          <FlexItem>{actionButton}</FlexItem>
         </Flex>
       </DescriptionListDescription>
     </DescriptionListGroup>
@@ -227,6 +229,7 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
     { enabled: Boolean(cluster.id) },
   );
   const grouped = groupAttachmentsByEndpoint(attachments);
+  const autoAttachmentRequested = cluster.spec?.autoExternalIpAttachment === true;
 
   return (
     <Card variant="secondary">
@@ -244,6 +247,7 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
         ) : (
           <DescriptionList isCompact aria-label={t('External IP endpoints')}>
             <EndpointRow
+              autoAttachmentRequested={autoAttachmentRequested}
               cluster={cluster}
               endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API}
               status={grouped.api}
@@ -251,6 +255,7 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
               onDetach={onDetach}
             />
             <EndpointRow
+              autoAttachmentRequested={autoAttachmentRequested}
               cluster={cluster}
               endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS}
               status={grouped.ingress}
