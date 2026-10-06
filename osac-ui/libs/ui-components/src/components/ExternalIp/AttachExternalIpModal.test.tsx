@@ -32,13 +32,11 @@ const attachedIp = {
 const renderModal = ({
   onAttach = vi.fn().mockResolvedValue(undefined),
   onClose = vi.fn(),
-  onSuccess = vi.fn(),
   externalIps = [eligibleIp],
   transportOverrides,
 }: {
   onAttach?: (externalIpId: string) => Promise<unknown>;
   onClose?: () => void;
-  onSuccess?: () => void;
   externalIps?: ExternalIP[];
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
@@ -48,16 +46,15 @@ const renderModal = ({
       emptyDescription="Create an external IP first, then attach it to this endpoint."
       onAttach={onAttach}
       onClose={onClose}
-      onSuccess={onSuccess}
     />,
     { apiFixtures: { externalIps }, transportOverrides },
   );
 
 describe('AttachExternalIpModal', () => {
-  it('submits the selected unattached IP and calls onSuccess', async () => {
+  it('submits the selected unattached IP and closes after success', async () => {
     const onAttach = vi.fn().mockResolvedValue(undefined);
-    const onSuccess = vi.fn();
-    const { user } = renderModal({ onAttach, onSuccess });
+    const onClose = vi.fn();
+    const { user } = renderModal({ onAttach, onClose });
 
     await waitFor(() => {
       expect(screen.getByLabelText(/^External IP/)).toHaveTextContent('edge-ip');
@@ -66,7 +63,7 @@ describe('AttachExternalIpModal', () => {
     await user.click(screen.getByRole('button', { name: /^Attach$/ }));
 
     await waitFor(() => expect(onAttach).toHaveBeenCalledWith('eip-1'));
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
   it('lists only allocated unattached external IPs and bounds the request', async () => {
@@ -111,8 +108,8 @@ describe('AttachExternalIpModal', () => {
     const onAttach = vi
       .fn()
       .mockRejectedValue(new ConnectError('already attached', Code.AlreadyExists));
-    const onSuccess = vi.fn();
-    const { user } = renderModal({ onAttach, onSuccess });
+    const onClose = vi.fn();
+    const { user } = renderModal({ onAttach, onClose });
 
     await waitFor(() => {
       expect(screen.getByLabelText(/^External IP/)).toHaveTextContent('edge-ip');
@@ -120,7 +117,7 @@ describe('AttachExternalIpModal', () => {
     await user.click(screen.getByRole('button', { name: /^Attach$/ }));
 
     expect(await screen.findByText('already attached')).toBeInTheDocument();
-    expect(onSuccess).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Attach$/ })).toBeEnabled();
   });

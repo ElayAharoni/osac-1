@@ -26,31 +26,24 @@ const eligibleIp = {
 const renderModal = ({
   endpoint = ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
   onClose = vi.fn(),
-  onSuccess = vi.fn(),
   transportOverrides,
 }: {
   endpoint?: ExternalIPAttachmentEndpoint;
   onClose?: () => void;
-  onSuccess?: () => void;
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
   renderWithProviders(
-    <AttachExternalIpModal
-      clusterId="cluster-1"
-      endpoint={endpoint}
-      onClose={onClose}
-      onSuccess={onSuccess}
-    />,
+    <AttachExternalIpModal clusterId="cluster-1" endpoint={endpoint} onClose={onClose} />,
     { apiFixtures: { externalIps: [eligibleIp] }, transportOverrides },
   );
 
 describe('AttachExternalIpModal', () => {
   it('submits a cluster endpoint attachment without exposing a name field', async () => {
-    const onSuccess = vi.fn();
+    const onClose = vi.fn();
     let createRequest: ExternalIPAttachmentsCreateRequest | undefined;
     const { user } = renderModal({
       endpoint: ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS,
-      onSuccess,
+      onClose,
       transportOverrides: {
         onExternalIpAttachmentCreate: (request) => {
           createRequest = request;
@@ -75,6 +68,6 @@ describe('AttachExternalIpModal', () => {
       ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS,
     );
     expect(createRequest?.object?.metadata?.name).toMatch(/^eipa-/);
-    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+    await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });

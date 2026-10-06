@@ -23,24 +23,22 @@ const eligibleIp = {
 
 const renderModal = ({
   onClose = vi.fn(),
-  onSuccess = vi.fn(),
   transportOverrides,
 }: {
   onClose?: () => void;
-  onSuccess?: () => void;
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
-  renderWithProviders(<AttachExternalIpModal vm={vm} onClose={onClose} onSuccess={onSuccess} />, {
+  renderWithProviders(<AttachExternalIpModal vm={vm} onClose={onClose} />, {
     apiFixtures: { externalIps: [eligibleIp] },
     transportOverrides,
   });
 
 describe('AttachExternalIpModal', () => {
   it('submits an attachment for the auto-selected unattached IP', async () => {
-    const onSuccess = vi.fn();
+    const onClose = vi.fn();
     let createRequest: ExternalIPAttachmentsCreateRequest | undefined;
     const { user } = renderModal({
-      onSuccess,
+      onClose,
       transportOverrides: {
         onExternalIpAttachmentCreate: (req) => {
           createRequest = req;
@@ -65,7 +63,7 @@ describe('AttachExternalIpModal', () => {
     expect(createRequest?.object?.spec?.target.case).toBe('computeInstance');
     expect(createRequest?.object?.spec?.target.value?.id).toBe('vm-1');
     await waitFor(() => {
-      expect(onSuccess).toHaveBeenCalled();
+      expect(onClose).toHaveBeenCalled();
     });
   });
 });

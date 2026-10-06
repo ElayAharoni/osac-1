@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Button, Modal, ModalBody, ModalFooter, ModalHeader } from '@patternfly/react-core';
 import { Formik } from 'formik';
 import type { TFunction } from 'i18next';
@@ -23,7 +23,6 @@ export interface ExternalIpAttachModalProps {
   emptyDescription: string;
   onAttach: (externalIpId: string) => Promise<unknown>;
   onClose: () => void;
-  onSuccess: () => void;
   fieldId?: string;
 }
 
@@ -43,11 +42,9 @@ const ExternalIpAttachModal = ({
   emptyDescription,
   onAttach,
   onClose,
-  onSuccess,
   fieldId = 'attach-external-ip',
 }: ExternalIpAttachModalProps) => {
   const { t } = useTranslation();
-  const submittingRef = useRef(false);
   const [submitError, setSubmitError] = useState<unknown>();
 
   return (
@@ -55,18 +52,15 @@ const ExternalIpAttachModal = ({
       initialValues={{ externalIp: emptyResourceSelectValue() }}
       validationSchema={validationSchema(t)}
       onSubmit={async (values) => {
-        if (submittingRef.current || !values.externalIp.id) {
+        if (!values.externalIp.id) {
           return;
         }
-        submittingRef.current = true;
         setSubmitError(undefined);
         try {
           await onAttach(values.externalIp.id);
-          onSuccess();
+          onClose();
         } catch (error) {
           setSubmitError(error);
-        } finally {
-          submittingRef.current = false;
         }
       }}
     >
