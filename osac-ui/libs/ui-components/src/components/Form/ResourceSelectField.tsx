@@ -35,7 +35,7 @@ export interface ResourceSelectFieldProps {
   label: string;
   fieldId: string;
   service: ListService;
-  request?: ListParams;
+  request?: Pick<ListParams, 'filter' | 'limit'>;
   isRequired?: boolean;
   isDisabled?: boolean;
   labelInfo?: ReactNode;

@@ -30,28 +30,24 @@ import { clusterAttachmentFilter } from '../../../api/v1/external-ip-data';
 import { useTranslation } from '../../../hooks/useTranslation';
 import QueryErrorState from '../../Resource/QueryErrorState';
 
-export interface EndpointAttachmentStatus {
-  attachment: ExternalIPAttachment | undefined;
-}
-
 export interface ClusterEndpointAttachments {
-  api: EndpointAttachmentStatus;
-  ingress: EndpointAttachmentStatus;
+  api: ExternalIPAttachment | undefined;
+  ingress: ExternalIPAttachment | undefined;
 }
 
 export const groupAttachmentsByEndpoint = (
   attachments: readonly ExternalIPAttachment[],
 ): ClusterEndpointAttachments => {
-  let api: EndpointAttachmentStatus = { attachment: undefined };
-  let ingress: EndpointAttachmentStatus = { attachment: undefined };
+  let api: ExternalIPAttachment | undefined;
+  let ingress: ExternalIPAttachment | undefined;
 
   for (const attachment of attachments) {
     const endpoint = attachment.spec?.targetEndpoint;
 
     if (endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API) {
-      api = { attachment };
+      api = attachment;
     } else if (endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS) {
-      ingress = { attachment };
+      ingress = attachment;
     }
   }
 
@@ -95,7 +91,7 @@ interface EndpointRowProps {
   autoAttachmentRequested: boolean;
   cluster: Cluster;
   endpoint: ExternalIPAttachmentEndpoint;
-  status: EndpointAttachmentStatus;
+  attachment: ExternalIPAttachment | undefined;
   onAttach?: (endpoint: ExternalIPAttachmentEndpoint) => void;
   onDetach?: (attachment: ExternalIPAttachment) => void;
 }
@@ -104,7 +100,7 @@ const EndpointRow = ({
   autoAttachmentRequested,
   cluster,
   endpoint,
-  status,
+  attachment,
   onAttach,
   onDetach,
 }: EndpointRowProps) => {
@@ -121,7 +117,6 @@ const EndpointRow = ({
       : clusterState === ClusterState.PROGRESSING
         ? t('Awaiting provisioning')
         : '—';
-  const attachment = status.attachment;
   const label =
     endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
       ? t('API endpoint')
@@ -245,7 +240,7 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
               autoAttachmentRequested={autoAttachmentRequested}
               cluster={cluster}
               endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API}
-              status={grouped.api}
+              attachment={grouped.api}
               onAttach={onAttach}
               onDetach={onDetach}
             />
@@ -253,7 +248,7 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
               autoAttachmentRequested={autoAttachmentRequested}
               cluster={cluster}
               endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS}
-              status={grouped.ingress}
+              attachment={grouped.ingress}
               onAttach={onAttach}
               onDetach={onDetach}
             />
