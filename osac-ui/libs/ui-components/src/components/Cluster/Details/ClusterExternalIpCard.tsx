@@ -133,7 +133,7 @@ const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: Endpoint
 
   return (
     <DescriptionListGroup>
-      <DescriptionListTerm>{t(label)}</DescriptionListTerm>
+      <DescriptionListTerm>{label}</DescriptionListTerm>
       <DescriptionListDescription>
         <Flex direction={{ default: 'column' }} spaceItems={{ default: 'spaceItemsSm' }}>
           <FlexItem>{endpointText}</FlexItem>
@@ -163,7 +163,7 @@ const EndpointRow = ({ cluster, endpoint, status, onAttach, onDetach }: Endpoint
                             : 'orange'
                         }
                       >
-                        {t(attachmentStateLabel(attachmentState, t))}
+                        {attachmentStateLabel(attachmentState, t)}
                       </Label>
                       {attachment.status?.message ? ` ${attachment.status.message}` : null}
                     </Content>

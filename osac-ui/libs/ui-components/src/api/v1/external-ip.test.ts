@@ -7,8 +7,10 @@ import { describe, expect, it } from 'vitest';
 import {
   ExternalIPAttachmentEndpoint,
   ExternalIPAttachmentSchema,
+  ExternalIPAttachments,
   ExternalIPAttachmentsCreateResponseSchema,
   ExternalIPAttachmentsDeleteResponseSchema,
+  ExternalIPs,
 } from '@osac/types';
 
 import { useCreateExternalIPAttachment, useDeleteExternalIPAttachment } from './external-ip';
@@ -58,6 +60,8 @@ describe('ExternalIP attachment mutations', () => {
     const { queryClient, wrapper } = makeWrapper(transport);
     queryClient.setQueryData(apiQueryKey('v1/external_ip_attachments'), { items: [] });
     queryClient.setQueryData(apiQueryKey('v1/external_ips'), { items: [] });
+    queryClient.setQueryData([ExternalIPAttachments.typeName], {});
+    queryClient.setQueryData([ExternalIPs.typeName], {});
 
     const { result } = renderHook(() => useCreateExternalIPAttachment(), { wrapper });
 
@@ -72,6 +76,8 @@ describe('ExternalIP attachment mutations', () => {
       queryClient.getQueryState(apiQueryKey('v1/external_ip_attachments'))?.isInvalidated,
     ).toBe(true);
     expect(queryClient.getQueryState(apiQueryKey('v1/external_ips'))?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState([ExternalIPAttachments.typeName])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState([ExternalIPs.typeName])?.isInvalidated).toBe(true);
   });
 
   it('deletes an attachment and invalidates attachment and ExternalIP queries', async () => {
@@ -88,6 +94,8 @@ describe('ExternalIP attachment mutations', () => {
     const { queryClient, wrapper } = makeWrapper(transport);
     queryClient.setQueryData(apiQueryKey('v1/external_ip_attachments'), { items: [] });
     queryClient.setQueryData(apiQueryKey('v1/external_ips'), { items: [] });
+    queryClient.setQueryData([ExternalIPAttachments.typeName], {});
+    queryClient.setQueryData([ExternalIPs.typeName], {});
 
     const { result } = renderHook(() => useDeleteExternalIPAttachment(), { wrapper });
 
@@ -100,5 +108,7 @@ describe('ExternalIP attachment mutations', () => {
       queryClient.getQueryState(apiQueryKey('v1/external_ip_attachments'))?.isInvalidated,
     ).toBe(true);
     expect(queryClient.getQueryState(apiQueryKey('v1/external_ips'))?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState([ExternalIPAttachments.typeName])?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState([ExternalIPs.typeName])?.isInvalidated).toBe(true);
   });
 });

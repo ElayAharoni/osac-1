@@ -11,6 +11,7 @@ import {
 import { useApiFetch } from '../api-context';
 import { type ListParams, apiQueryKey } from '../types';
 import { type ApiQueryClient, useApiQuery, useApiQueryClient } from '../use-api-query';
+import { useInvalidateServiceQueries } from '../use-resource';
 
 type ExternalIPQueryOptions = {
   enabled?: boolean;
@@ -47,6 +48,7 @@ export const invalidateExternalIPAttachmentQueries = async (qc: ApiQueryClient) 
 export const useCreateExternalIPAttachment = () => {
   const client = useApiFetch(ExternalIPAttachments);
   const qc = useApiQueryClient();
+  const invalidateServiceQueries = useInvalidateServiceQueries();
 
   return useMutation({
     mutationFn: async (body: MessageInitShape<typeof ExternalIPAttachmentSchema>) => {
@@ -57,16 +59,25 @@ export const useCreateExternalIPAttachment = () => {
       }
       return attachment;
     },
-    onSuccess: () => invalidateExternalIPAttachmentQueries(qc),
+    onSuccess: async () => {
+      await invalidateExternalIPAttachmentQueries(qc);
+      await invalidateServiceQueries(ExternalIPAttachments);
+      await invalidateServiceQueries(ExternalIPs);
+    },
   });
 };
 
 export const useDeleteExternalIPAttachment = () => {
   const client = useApiFetch(ExternalIPAttachments);
   const qc = useApiQueryClient();
+  const invalidateServiceQueries = useInvalidateServiceQueries();
 
   return useMutation<ExternalIPAttachmentsDeleteResponse, Error, string>({
     mutationFn: (id) => client.delete({ id }),
-    onSuccess: () => invalidateExternalIPAttachmentQueries(qc),
+    onSuccess: async () => {
+      await invalidateExternalIPAttachmentQueries(qc);
+      await invalidateServiceQueries(ExternalIPAttachments);
+      await invalidateServiceQueries(ExternalIPs);
+    },
   });
 };
