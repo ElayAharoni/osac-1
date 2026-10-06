@@ -877,7 +877,6 @@
   "This detaches the external IP from the API endpoint.": "This detaches the external IP from the API endpoint.",
   "This detaches the external IP from the Ingress endpoint.": "This detaches the external IP from the Ingress endpoint.",
   "This detaches the external IP from the virtual machine.": "This detaches the external IP from the virtual machine.",
-  "This endpoint already has an external IP attached.": "This endpoint already has an external IP attached.",
   "This external IP is being deleted.": "This external IP is being deleted.",
   "This feature is coming soon.": "This feature is coming soon.",
   "This field is required": "This field is required",

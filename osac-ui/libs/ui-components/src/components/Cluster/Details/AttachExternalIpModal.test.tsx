@@ -38,7 +38,6 @@ const renderModal = ({
     <AttachExternalIpModal
       clusterId="cluster-1"
       endpoint={endpoint}
-      endpointOccupied={false}
       onClose={onClose}
       onSuccess={onSuccess}
     />,

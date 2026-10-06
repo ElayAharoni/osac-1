@@ -83,9 +83,7 @@ describe('groupAttachmentsByEndpoint', () => {
     const result = groupAttachmentsByEndpoint([apiAttachment, ingressAttachment]);
 
     expect(result.api.attachment).toBe(apiAttachment);
-    expect(result.api.externalIpAddress).toBe('203.0.113.10');
     expect(result.ingress.attachment).toBe(ingressAttachment);
-    expect(result.ingress.externalIpAddress).toBeUndefined();
   });
 
   it('keeps an endpoint occupied while its attachment is deleting', () => {

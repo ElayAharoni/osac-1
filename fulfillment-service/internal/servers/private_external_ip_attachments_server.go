@@ -449,11 +449,11 @@ func (s *PrivateExternalIPAttachmentsServer) validateTargetReference(
 	ctx context.Context, spec *privatev1.ExternalIPAttachmentSpec, attachmentTenant string) error {
 	switch {
 	case spec.HasComputeInstance():
-		return s.validateComputeInstanceReference(ctx, spec.GetComputeInstance())
+		return s.validateComputeInstanceReference(ctx, spec.GetComputeInstance(), attachmentTenant)
 	case spec.HasCluster():
 		return s.validateClusterReference(ctx, spec.GetCluster(), attachmentTenant)
 	case spec.HasBaremetalInstance():
-		return s.validateBareMetalInstanceReference(ctx, spec.GetBaremetalInstance())
+		return s.validateBareMetalInstanceReference(ctx, spec.GetBaremetalInstance(), attachmentTenant)
 	default:
 		return grpcstatus.Errorf(grpccodes.InvalidArgument,
 			"exactly one target must be set (compute_instance, cluster, or baremetal_instance)")
@@ -461,9 +461,9 @@ func (s *PrivateExternalIPAttachmentsServer) validateTargetReference(
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateComputeInstanceReference(
-	ctx context.Context, ref *privatev1.ComputeInstanceLocalReference) error {
+	ctx context.Context, ref *privatev1.ComputeInstanceLocalReference, attachmentTenant string) error {
 	key := refKey(ref)
-	_, err := s.computeInstanceDao.Get().
+	response, err := s.computeInstanceDao.Get().
 		SetId(key).
 		SetLock(true).
 		Do(ctx)
@@ -478,7 +478,7 @@ func (s *PrivateExternalIPAttachmentsServer) validateComputeInstanceReference(
 			slog.Any("error", err))
 		return grpcstatus.Errorf(grpccodes.Internal, "failed to validate compute_instance")
 	}
-	return nil
+	return validateTenantMatch(attachmentTenant, response.GetObject(), "ComputeInstance", key)
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateClusterReference(
@@ -503,9 +503,9 @@ func (s *PrivateExternalIPAttachmentsServer) validateClusterReference(
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(
-	ctx context.Context, ref *privatev1.BareMetalInstanceLocalReference) error {
+	ctx context.Context, ref *privatev1.BareMetalInstanceLocalReference, attachmentTenant string) error {
 	key := refKey(ref)
-	_, err := s.bareMetalInstanceDao.Get().
+	response, err := s.bareMetalInstanceDao.Get().
 		SetId(key).
 		SetLock(true).
 		Do(ctx)
@@ -520,7 +520,7 @@ func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(
 			slog.Any("error", err))
 		return grpcstatus.Errorf(grpccodes.Internal, "failed to validate baremetal_instance")
 	}
-	return nil
+	return validateTenantMatch(attachmentTenant, response.GetObject(), "BareMetalInstance", key)
 }
 
 func (s *PrivateExternalIPAttachmentsServer) getTargetID(

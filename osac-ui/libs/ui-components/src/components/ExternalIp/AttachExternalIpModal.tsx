@@ -24,8 +24,6 @@ export interface ExternalIpAttachModalProps {
   onAttach: (externalIpId: string) => Promise<unknown>;
   onClose: () => void;
   onSuccess: () => void;
-  endpointOccupied?: boolean;
-  occupiedMessage?: string;
   fieldId?: string;
 }
 
@@ -46,8 +44,6 @@ const ExternalIpAttachModal = ({
   onAttach,
   onClose,
   onSuccess,
-  endpointOccupied = false,
-  occupiedMessage,
   fieldId = 'attach-external-ip',
 }: ExternalIpAttachModalProps) => {
   const { t } = useTranslation();
@@ -59,7 +55,7 @@ const ExternalIpAttachModal = ({
       initialValues={{ externalIp: emptyResourceSelectValue() }}
       validationSchema={validationSchema(t)}
       onSubmit={async (values) => {
-        if (submittingRef.current || endpointOccupied || !values.externalIp.id) {
+        if (submittingRef.current || !values.externalIp.id) {
           return;
         }
         submittingRef.current = true;
@@ -91,7 +87,6 @@ const ExternalIpAttachModal = ({
                 service={ExternalIPs}
                 request={{ filter: unallocatedExternalIpFilter(), limit: EXTERNAL_IP_PICKER_LIMIT }}
                 isRequired
-                isDisabled={endpointOccupied}
                 autoSelectSingleOption
                 placeholder={t('Select an external IP')}
                 loadErrorTitle={t('Error loading external IPs')}
@@ -99,9 +94,6 @@ const ExternalIpAttachModal = ({
                 emptyDescription={emptyDescription}
               />
             </OsacForm>
-            {endpointOccupied && occupiedMessage ? (
-              <Alert variant="warning" title={occupiedMessage} isInline />
-            ) : null}
             {submitError ? (
               <Alert variant="danger" title={t('Failed to attach external IP')} isInline>
                 {getErrorMessage(submitError)}
@@ -115,7 +107,7 @@ const ExternalIpAttachModal = ({
             <Button
               variant="primary"
               onClick={submitForm}
-              isDisabled={endpointOccupied || isSubmitting || !values.externalIp.id}
+              isDisabled={isSubmitting || !values.externalIp.id}
               isLoading={isSubmitting}
             >
               {t('Attach')}

@@ -10,7 +10,6 @@ import ExternalIpAttachModal from '../../ExternalIp/AttachExternalIpModal';
 export interface AttachExternalIpModalProps {
   clusterId: string;
   endpoint: ExternalIPAttachmentEndpoint;
-  endpointOccupied?: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -18,7 +17,6 @@ export interface AttachExternalIpModalProps {
 const AttachExternalIpModal = ({
   clusterId,
   endpoint,
-  endpointOccupied = false,
   onClose,
   onSuccess,
 }: AttachExternalIpModalProps) => {
@@ -33,8 +31,6 @@ const AttachExternalIpModal = ({
     <ExternalIpAttachModal
       title={title}
       emptyDescription={t('Create an external IP first, then attach it to this cluster endpoint.')}
-      endpointOccupied={endpointOccupied}
-      occupiedMessage={t('This endpoint already has an external IP attached.')}
       fieldId="attach-cluster-external-ip"
       onAttach={(externalIpId) =>
         createAttachment.mutateAsync({
