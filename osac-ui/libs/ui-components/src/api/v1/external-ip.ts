@@ -1,8 +1,16 @@
-import { ExternalIPAttachments, ExternalIPs } from '@osac/types';
+import type { MessageInitShape } from '@bufbuild/protobuf';
+import { useMutation } from '@tanstack/react-query';
+
+import {
+  ExternalIPAttachmentSchema,
+  ExternalIPAttachments,
+  type ExternalIPAttachmentsDeleteResponse,
+  ExternalIPs,
+} from '@osac/types';
 
 import { useApiFetch } from '../api-context';
 import { type ListParams, apiQueryKey } from '../types';
-import { useApiQuery } from '../use-api-query';
+import { type ApiQueryClient, useApiQuery, useApiQueryClient } from '../use-api-query';
 
 type ExternalIPQueryOptions = {
   enabled?: boolean;
@@ -28,5 +36,37 @@ export const useExternalIPAttachments = (
     queryFn: () => client.list(params),
     select: (data) => data.items,
     enabled: options.enabled ?? true,
+  });
+};
+
+export const invalidateExternalIPAttachmentQueries = async (qc: ApiQueryClient) => {
+  await qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') });
+  await qc.invalidateQueries({ queryKey: apiQueryKey('v1/external_ips') });
+};
+
+export const useCreateExternalIPAttachment = () => {
+  const client = useApiFetch(ExternalIPAttachments);
+  const qc = useApiQueryClient();
+
+  return useMutation({
+    mutationFn: async (body: MessageInitShape<typeof ExternalIPAttachmentSchema>) => {
+      const response = await client.create({ object: body });
+      const attachment = response.object;
+      if (!attachment?.id) {
+        throw new Error('Create response missing external IP attachment');
+      }
+      return attachment;
+    },
+    onSuccess: () => invalidateExternalIPAttachmentQueries(qc),
+  });
+};
+
+export const useDeleteExternalIPAttachment = () => {
+  const client = useApiFetch(ExternalIPAttachments);
+  const qc = useApiQueryClient();
+
+  return useMutation<ExternalIPAttachmentsDeleteResponse, Error, string>({
+    mutationFn: (id) => client.delete({ id }),
+    onSuccess: () => invalidateExternalIPAttachmentQueries(qc),
   });
 };
