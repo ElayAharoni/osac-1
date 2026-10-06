@@ -67,11 +67,11 @@ describe('ExternalIP attachment mutations', () => {
 
     let created: unknown;
     await act(async () => {
-      created = await result.current.mutateAsync(attachmentInput);
+      created = await result.current.mutateAsync({ object: attachmentInput });
     });
 
     expect(capturedObject).toEqual(attachmentInput);
-    expect(created).toMatchObject({ id: 'attachment-1' });
+    expect(created).toMatchObject({ object: { id: 'attachment-1' } });
     expect(
       queryClient.getQueryState(apiQueryKey('v1/external_ip_attachments'))?.isInvalidated,
     ).toBe(true);
@@ -100,7 +100,7 @@ describe('ExternalIP attachment mutations', () => {
     const { result } = renderHook(() => useDeleteExternalIPAttachment(), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync('attachment-1');
+      await result.current.mutateAsync({ id: 'attachment-1' });
     });
 
     expect(capturedId).toBe('attachment-1');
