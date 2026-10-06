@@ -47,7 +47,6 @@ const invalidateExternalIPAttachmentCaches = async (
 ) => {
   await Promise.all([
     invalidateExternalIPAttachmentQueries(qc),
-    invalidateServiceQueries(ExternalIPAttachments),
     invalidateServiceQueries(ExternalIPs),
   ]);
 };
