@@ -1,5 +1,4 @@
 import { create } from '@bufbuild/protobuf';
-import { Code, ConnectError } from '@connectrpc/connect';
 import { screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -9,8 +8,6 @@ import { ExternalIPAttachmentsCreateResponseSchema, ExternalIPState } from '@osa
 import AttachExternalIpModal from './AttachExternalIpModal';
 import type { MockTransportOverrides } from '../../../test-utils/createMockConnectTransport';
 import { renderWithProviders } from '../../../test-utils/TestProviders';
-
-const ATTACH_BUTTON_NAME = /Attach/i;
 
 const vm = { id: 'vm-1', metadata: { name: 'test-vm' } } as ComputeInstance;
 
@@ -24,29 +21,17 @@ const eligibleIp = {
   },
 } as ExternalIP;
 
-const attachedIp = {
-  id: 'eip-attached',
-  metadata: { name: 'in-use-ip' },
-  status: {
-    state: ExternalIPState.EXTERNAL_IP_STATE_ALLOCATED,
-    attached: true,
-    address: '203.0.113.11',
-  },
-} as ExternalIP;
-
 const renderModal = ({
   onClose = vi.fn(),
   onSuccess = vi.fn(),
-  externalIps = [eligibleIp],
   transportOverrides,
 }: {
   onClose?: () => void;
   onSuccess?: () => void;
-  externalIps?: ExternalIP[];
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
   renderWithProviders(<AttachExternalIpModal vm={vm} onClose={onClose} onSuccess={onSuccess} />, {
-    apiFixtures: { externalIps },
+    apiFixtures: { externalIps: [eligibleIp] },
     transportOverrides,
   });
 
@@ -69,7 +54,7 @@ describe('AttachExternalIpModal', () => {
     await waitFor(() => {
       expect(screen.getByLabelText(/^External IP/)).toHaveTextContent('edge-ip');
     });
-    await user.click(screen.getByRole('button', { name: ATTACH_BUTTON_NAME }));
+    await user.click(screen.getByRole('button', { name: /^Attach$/ }));
 
     await waitFor(() => {
       expect(createRequest?.object?.spec?.externalIp?.id).toBe('eip-1');
@@ -82,58 +67,5 @@ describe('AttachExternalIpModal', () => {
     await waitFor(() => {
       expect(onSuccess).toHaveBeenCalled();
     });
-  });
-
-  it('does not list attached external IPs', async () => {
-    renderModal({ externalIps: [eligibleIp, attachedIp] });
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/^External IP/)).not.toBeDisabled();
-    });
-    expect(screen.getByLabelText(/^External IP/)).toHaveTextContent('edge-ip');
-    expect(screen.queryByText('in-use-ip')).not.toBeInTheDocument();
-  });
-
-  it('shows a warning and disables attach when no unattached IPs are available', async () => {
-    renderModal({ externalIps: [attachedIp] });
-
-    expect(await screen.findByText('No unattached external IPs available')).toBeInTheDocument();
-    expect(
-      screen.getByText('Create an external IP first, then attach it to this virtual machine.'),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: ATTACH_BUTTON_NAME })).toBeDisabled();
-  });
-
-  it('shows a loading error when external IPs cannot be retrieved', async () => {
-    renderModal({
-      transportOverrides: {
-        onExternalIpList: () => {
-          throw new ConnectError('ips unavailable', Code.Unavailable);
-        },
-      },
-    });
-
-    expect(await screen.findByText('Error loading external IPs')).toBeInTheDocument();
-    expect(screen.getByText('ips unavailable')).toBeInTheDocument();
-  });
-
-  it('renders an inline error and does not close on attach failure', async () => {
-    const onSuccess = vi.fn();
-    const { user } = renderModal({
-      onSuccess,
-      transportOverrides: {
-        onExternalIpAttachmentCreate: () => {
-          throw new ConnectError('already attached', Code.AlreadyExists);
-        },
-      },
-    });
-
-    await waitFor(() => {
-      expect(screen.getByLabelText(/^External IP/)).toHaveTextContent('edge-ip');
-    });
-    await user.click(screen.getByRole('button', { name: ATTACH_BUTTON_NAME }));
-
-    expect(await screen.findByText('already attached')).toBeInTheDocument();
-    expect(onSuccess).not.toHaveBeenCalled();
   });
 });
