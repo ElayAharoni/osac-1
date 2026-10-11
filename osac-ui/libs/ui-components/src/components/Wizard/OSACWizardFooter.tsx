@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Code, ConnectError } from '@connectrpc/connect';
 import {
   ActionList,
   ActionListGroup,
@@ -13,9 +12,8 @@ import {
 } from '@patternfly/react-core';
 import type { FormikErrors } from 'formik';
 import { useFormikContext } from 'formik';
-import type { TFunction } from 'i18next';
 
-import { getErrorMessage } from '@osac/ui-components/utils/error';
+import { getApiErrorMessage } from '@osac/ui-components/utils/error';
 
 import { useTranslation } from '../../hooks/useTranslation';
 import { useFieldValidation } from '../Form/FieldValidationContext';
@@ -30,24 +28,6 @@ interface OSACWizardFooterProps {
   submitLabel?: string;
   errorTitle?: string;
 }
-
-const getWizardErrorMessage = (error: unknown, t: TFunction): string => {
-  if (!(error instanceof ConnectError)) {
-    return getErrorMessage(error);
-  }
-
-  switch (error.code) {
-    case Code.InvalidArgument:
-    case Code.AlreadyExists:
-      return getErrorMessage(error);
-    case Code.PermissionDenied:
-      return t('You are not authorized to access this resource.');
-    case Code.Internal:
-      return t('Unexpected error occurred');
-    default:
-      return getErrorMessage(error);
-  }
-};
 
 export const OSACWizardFooter = ({
   onCancel,
@@ -142,7 +122,7 @@ export const OSACWizardFooter = ({
                 (isEdit ? t('Failed to edit resource') : t('Failed to create resource'))
               }
             >
-              {isEdit ? getErrorMessage(error) : getWizardErrorMessage(error, t)}
+              {getApiErrorMessage(error, t)}
             </Alert>
           </StackItem>
         )}

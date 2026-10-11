@@ -80,20 +80,27 @@ describe('OSACWizardFooter', () => {
     },
   );
 
-  it('preserves backend error messages in edit mode', () => {
-    const backendMessage = 'permission details from the backend';
-    renderFooter(
-      new ConnectError(backendMessage, Code.PermissionDenied),
-      () => Promise.resolve(),
-      true,
-    );
+  it.each([
+    {
+      label: 'PermissionDenied',
+      code: Code.PermissionDenied,
+      backendMessage: 'permission details from the backend',
+      expectedMessage: 'You are not authorized to access this resource.',
+    },
+    {
+      label: 'Internal',
+      code: Code.Internal,
+      backendMessage: 'internal stack details',
+      expectedMessage: 'Unexpected error occurred',
+    },
+  ])('maps $label to the edit alert contract', ({ code, backendMessage, expectedMessage }) => {
+    renderFooter(new ConnectError(backendMessage, code), () => Promise.resolve(), true);
 
     const alert = screen
       .getByRole('heading', { name: 'Danger alert: Failed to edit resource' })
       .closest('.pf-v6-c-alert');
     expect(alert).toHaveClass('pf-m-danger');
-    expect(alert).toHaveTextContent(backendMessage);
-    expect(alert).not.toHaveTextContent('You are not authorized to access this resource.');
+    expect(alert).toHaveTextContent(expectedMessage);
   });
 
   it('disables the create button while Formik submission is pending', async () => {
