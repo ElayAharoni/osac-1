@@ -16,8 +16,6 @@ import {
   emptyResourceSelectValue,
 } from '../Form/ResourceSelectField';
 
-export const EXTERNAL_IP_PICKER_LIMIT = 100;
-
 export interface ExternalIpAttachModalProps {
   title: string;
   emptyDescription: string;
@@ -77,7 +75,7 @@ const ExternalIpAttachModal = ({
                 label={t('External IP')}
                 fieldId="attach-external-ip"
                 service={ExternalIPs}
-                request={{ filter: unallocatedExternalIpFilter(), limit: EXTERNAL_IP_PICKER_LIMIT }}
+                request={{ filter: unallocatedExternalIpFilter() }}
                 isRequired
                 autoSelectSingleOption
                 placeholder={t('Select an external IP')}

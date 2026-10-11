@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { ExternalIP } from '@osac/types';
 import { ExternalIPState } from '@osac/types';
 
-import AttachExternalIpModal, { EXTERNAL_IP_PICKER_LIMIT } from './AttachExternalIpModal';
+import AttachExternalIpModal from './AttachExternalIpModal';
 import type { MockTransportOverrides } from '../../test-utils/createMockConnectTransport';
 import { renderWithProviders } from '../../test-utils/TestProviders';
 
@@ -66,18 +66,9 @@ describe('AttachExternalIpModal', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
-  it('lists only allocated unattached external IPs and bounds the request', async () => {
-    let requestedLimit: number | undefined;
-    const { user } = renderModal({
-      externalIps: [eligibleIp, attachedIp],
-      transportOverrides: {
-        onExternalIpList: (request) => {
-          requestedLimit = request.limit;
-        },
-      },
-    });
+  it('lists only allocated unattached external IPs', async () => {
+    const { user } = renderModal({ externalIps: [eligibleIp, attachedIp] });
 
-    await waitFor(() => expect(requestedLimit).toBe(EXTERNAL_IP_PICKER_LIMIT));
     await user.click(await screen.findByLabelText(/^External IP/));
 
     expect(screen.getByRole('option', { name: 'edge-ip' })).toBeInTheDocument();

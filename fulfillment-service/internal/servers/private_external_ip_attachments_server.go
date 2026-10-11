@@ -321,12 +321,9 @@ func (s *PrivateExternalIPAttachmentsServer) Delete(ctx context.Context,
 		return
 	}
 
-	attachmentResponse, getErr := s.externalIPAttachmentDao.Get().SetId(id).Do(ctx)
+	_, getErr := s.externalIPAttachmentDao.Get().SetId(id).Do(ctx)
 	if getErr != nil {
 		err = translateLifecycleError(getErr)
-		return
-	}
-	if err = s.validateAttachmentReferences(ctx, attachmentResponse.GetObject()); err != nil {
 		return
 	}
 
@@ -527,31 +524,6 @@ func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(
 func validateExternalIPScope(attachmentTenant, attachmentProject, externalIPKey string,
 	externalIP *privatev1.ExternalIP) error {
 	return validateTenantProjectMatch(attachmentTenant, attachmentProject, externalIP, "ExternalIP", externalIPKey)
-}
-
-func (s *PrivateExternalIPAttachmentsServer) validateAttachmentReferences(
-	ctx context.Context, attachment *privatev1.ExternalIPAttachment) error {
-	metadata := attachment.GetMetadata()
-	if metadata == nil {
-		return grpcstatus.Errorf(grpccodes.InvalidArgument, "external IP attachment has no metadata")
-	}
-	attachmentTenant, err := resolveObjectTenant(ctx, metadata, s.tenancyLogic)
-	if err != nil {
-		return err
-	}
-	attachmentProject := metadata.GetProject()
-
-	externalIPKey := refKey(attachment.GetSpec().GetExternalIp())
-	externalIPResponse, err := s.externalIPDao.Get().SetId(externalIPKey).Do(ctx)
-	if err != nil {
-		return err
-	}
-	if err = validateExternalIPScope(attachmentTenant, attachmentProject, externalIPKey,
-		externalIPResponse.GetObject()); err != nil {
-		return err
-	}
-
-	return s.validateTargetReference(ctx, attachment.GetSpec(), attachmentTenant, attachmentProject)
 }
 
 func (s *PrivateExternalIPAttachmentsServer) getTargetID(

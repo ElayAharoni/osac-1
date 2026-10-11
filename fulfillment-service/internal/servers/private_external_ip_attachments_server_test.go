@@ -1359,7 +1359,7 @@ var _ = Describe("Private external IP attachments server", func() {
 			Expect(err.Error()).To(ContainSubstring("identifier is mandatory"))
 		})
 
-		It("Rejects Delete when the target belongs to another project", func() {
+		It("Deletes a legacy attachment when the target belongs to another project", func() {
 			createProjectInTenant(ctx, testTenant, "other-project")
 			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
 				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
@@ -1382,9 +1382,7 @@ var _ = Describe("Private external IP attachments server", func() {
 			_, err = server.Delete(ctx, privatev1.ExternalIPAttachmentsDeleteRequest_builder{
 				Id: attachmentResponse.GetObject().GetId(),
 			}.Build())
-			Expect(err).To(HaveOccurred())
-			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.InvalidArgument))
-			Expect(err).To(MatchError(ContainSubstring("belongs to project")))
+			Expect(err).ToNot(HaveOccurred())
 		})
 	})
 
