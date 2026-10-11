@@ -20,10 +20,14 @@ const AttachExternalIpModal = ({ vm, onClose }: AttachExternalIpModalProps) => {
     <ExternalIpAttachModal
       title={t('Attach external IP')}
       emptyDescription={t('Create an external IP first, then attach it to this virtual machine.')}
+      project={vm.metadata?.project ?? ''}
       onAttach={(externalIpId) =>
         createAttachment.mutateAsync({
           object: {
-            metadata: { name: generateExternalIpAttachmentName() },
+            metadata: {
+              name: generateExternalIpAttachmentName(),
+              project: vm.metadata?.project ?? '',
+            },
             spec: {
               externalIp: { id: externalIpId },
               target: { case: 'computeInstance', value: { id: vm.id } },

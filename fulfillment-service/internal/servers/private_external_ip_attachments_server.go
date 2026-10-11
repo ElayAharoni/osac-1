@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	grpccodes "google.golang.org/grpc/codes"
@@ -458,7 +459,7 @@ func (s *PrivateExternalIPAttachmentsServer) validateTargetReference(
 	case spec.HasComputeInstance():
 		return s.validateComputeInstanceReference(ctx, spec.GetComputeInstance(), attachmentTenant, attachmentProject)
 	case spec.HasCluster():
-		return s.validateClusterReference(ctx, spec.GetCluster(), attachmentTenant, attachmentProject)
+		return s.validateClusterReference(ctx, spec.GetCluster(), spec.GetTargetEndpoint(), attachmentTenant, attachmentProject)
 	case spec.HasBaremetalInstance():
 		return s.validateBareMetalInstanceReference(ctx, spec.GetBaremetalInstance(), attachmentTenant, attachmentProject)
 	default:
@@ -486,7 +487,9 @@ func (s *PrivateExternalIPAttachmentsServer) validateComputeInstanceReference(
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateClusterReference(
-	ctx context.Context, ref *privatev1.ClusterLocalReference, attachmentTenant, attachmentProject string) error {
+	ctx context.Context, ref *privatev1.ClusterLocalReference,
+	targetEndpoint privatev1.ExternalIPAttachmentEndpoint,
+	attachmentTenant, attachmentProject string) error {
 	key := refKey(ref)
 	response, err := s.clusterDao.Get().
 		SetId(key).
@@ -500,7 +503,38 @@ func (s *PrivateExternalIPAttachmentsServer) validateClusterReference(
 		}
 		return ConvertDAOErrorToGRPC(err, "get", key)
 	}
-	return validateTenantProjectMatch(attachmentTenant, attachmentProject, response.GetObject(), "Cluster", key)
+	cluster := response.GetObject()
+	if err := validateTenantProjectMatch(attachmentTenant, attachmentProject, cluster, "Cluster", key); err != nil {
+		return err
+	}
+	return validateClusterEndpointReady(cluster, targetEndpoint)
+}
+
+func validateClusterEndpointReady(
+	cluster *privatev1.Cluster, targetEndpoint privatev1.ExternalIPAttachmentEndpoint) error {
+	var endpointName, endpointAddress string
+	switch targetEndpoint {
+	case privatev1.ExternalIPAttachmentEndpoint_EXTERNAL_IP_ATTACHMENT_ENDPOINT_API:
+		endpointName = "API"
+		endpointAddress = cluster.GetStatus().GetApiEndpoint()
+	case privatev1.ExternalIPAttachmentEndpoint_EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS:
+		endpointName = "Ingress"
+		endpointAddress = cluster.GetStatus().GetIngressEndpoint()
+	default:
+		return grpcstatus.Errorf(grpccodes.InvalidArgument,
+			"unsupported cluster target endpoint: %s", targetEndpoint)
+	}
+
+	if cluster.GetStatus().GetState() != privatev1.ClusterState_CLUSTER_STATE_READY {
+		return grpcstatus.Errorf(grpccodes.FailedPrecondition,
+			"Cluster '%s' is not in READY state (current state: %s)",
+			cluster.GetId(), cluster.GetStatus().GetState())
+	}
+	if strings.TrimSpace(endpointAddress) == "" {
+		return grpcstatus.Errorf(grpccodes.FailedPrecondition,
+			"Cluster '%s' %s endpoint is not available", cluster.GetId(), endpointName)
+	}
+	return nil
 }
 
 func (s *PrivateExternalIPAttachmentsServer) validateBareMetalInstanceReference(

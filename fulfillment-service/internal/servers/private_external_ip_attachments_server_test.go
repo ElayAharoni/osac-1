@@ -101,6 +101,11 @@ func createClusterInTenantAndProject(
 			Spec: privatev1.ClusterSpec_builder{
 				Template: privatev1.ClusterTemplateReference_builder{Id: "ocp_small"}.Build(),
 			}.Build(),
+			Status: privatev1.ClusterStatus_builder{
+				State:           privatev1.ClusterState_CLUSTER_STATE_READY,
+				ApiEndpoint:     "api.example.com",
+				IngressEndpoint: "apps.example.com",
+			}.Build(),
 		}.Build(),
 	).Do(ctx)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
@@ -1105,6 +1110,50 @@ var _ = Describe("Private external IP attachments server", func() {
 			Expect(status.Code()).To(Equal(grpccodes.InvalidArgument))
 			Expect(err.Error()).To(ContainSubstring("Cluster"))
 			Expect(err.Error()).To(ContainSubstring("does not exist"))
+		})
+
+		It("Rejects Create when the cluster is not ready", func() {
+			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
+				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
+			cluster := createClusterInState(ctx, clusterDao)
+			cluster.GetStatus().SetState(privatev1.ClusterState_CLUSTER_STATE_PROGRESSING)
+			_, err := clusterDao.Update().SetObject(cluster).Do(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = server.Create(ctx, privatev1.ExternalIPAttachmentsCreateRequest_builder{
+				Object: privatev1.ExternalIPAttachment_builder{
+					Metadata: privatev1.Metadata_builder{Name: "cluster-not-ready"}.Build(),
+					Spec: privatev1.ExternalIPAttachmentSpec_builder{
+						ExternalIp:     privatev1.ExternalIPLocalReference_builder{Id: eip.GetId()}.Build(),
+						Cluster:        privatev1.ClusterLocalReference_builder{Id: cluster.GetId()}.Build(),
+						TargetEndpoint: privatev1.ExternalIPAttachmentEndpoint_EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+					}.Build(),
+				}.Build(),
+			}.Build())
+			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.FailedPrecondition))
+			Expect(err).To(MatchError(ContainSubstring("not in READY state")))
+		})
+
+		It("Rejects Create when the selected cluster endpoint is unavailable", func() {
+			eip := createExternalIPInState(ctx, externalIPDao, sharedPool.GetId(),
+				privatev1.ExternalIPState_EXTERNAL_IP_STATE_ALLOCATED, false)
+			cluster := createClusterInState(ctx, clusterDao)
+			cluster.GetStatus().SetApiEndpoint("")
+			_, err := clusterDao.Update().SetObject(cluster).Do(ctx)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = server.Create(ctx, privatev1.ExternalIPAttachmentsCreateRequest_builder{
+				Object: privatev1.ExternalIPAttachment_builder{
+					Metadata: privatev1.Metadata_builder{Name: "cluster-endpoint-unavailable"}.Build(),
+					Spec: privatev1.ExternalIPAttachmentSpec_builder{
+						ExternalIp:     privatev1.ExternalIPLocalReference_builder{Id: eip.GetId()}.Build(),
+						Cluster:        privatev1.ClusterLocalReference_builder{Id: cluster.GetId()}.Build(),
+						TargetEndpoint: privatev1.ExternalIPAttachmentEndpoint_EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
+					}.Build(),
+				}.Build(),
+			}.Build())
+			Expect(grpcstatus.Code(err)).To(Equal(grpccodes.FailedPrecondition))
+			Expect(err).To(MatchError(ContainSubstring("API endpoint is not available")))
 		})
 
 		It("Rejects Create when BareMetalInstance does not exist", func() {

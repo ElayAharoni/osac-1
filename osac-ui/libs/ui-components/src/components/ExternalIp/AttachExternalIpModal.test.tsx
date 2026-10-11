@@ -33,11 +33,13 @@ const renderModal = ({
   onAttach = vi.fn().mockResolvedValue(undefined),
   onClose = vi.fn(),
   externalIps = [eligibleIp],
+  project,
   transportOverrides,
 }: {
   onAttach?: (externalIpId: string) => Promise<unknown>;
   onClose?: () => void;
   externalIps?: ExternalIP[];
+  project?: string;
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
   renderWithProviders(
@@ -46,6 +48,7 @@ const renderModal = ({
       emptyDescription="Create an external IP first, then attach it to this endpoint."
       onAttach={onAttach}
       onClose={onClose}
+      project={project}
     />,
     { apiFixtures: { externalIps }, transportOverrides },
   );
@@ -73,6 +76,20 @@ describe('AttachExternalIpModal', () => {
 
     expect(screen.getByRole('option', { name: 'edge-ip' })).toBeInTheDocument();
     expect(screen.queryByRole('option', { name: 'in-use-ip' })).not.toBeInTheDocument();
+  });
+
+  it('requests unattached external IPs from the target project', async () => {
+    let filter: string | undefined;
+    renderModal({
+      project: 'project-a',
+      transportOverrides: {
+        onExternalIpList: (request) => {
+          filter = request.filter;
+        },
+      },
+    });
+
+    await waitFor(() => expect(filter).toContain('this.metadata.project == "project-a"'));
   });
 
   it('shows an empty state and disables attach when no IP is available', async () => {

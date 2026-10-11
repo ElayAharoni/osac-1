@@ -16,6 +16,7 @@ import { renderWithProviders } from '../../../test-utils/TestProviders';
 
 const cluster = create(ClusterSchema, {
   id: 'cluster-1',
+  metadata: { project: 'project-a' },
   status: {
     state: ClusterState.READY,
     apiEndpoint: 'api.example.com',

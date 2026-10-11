@@ -169,6 +169,7 @@ const ClusterDetailsPageContent = ({ cluster }: ClusterDetailViewProps) => {
       {attachEndpoint !== undefined && (
         <AttachExternalIpModal
           clusterId={cluster.id}
+          project={cluster.metadata?.project ?? ''}
           endpoint={attachEndpoint}
           onClose={() => setAttachEndpoint(undefined)}
         />

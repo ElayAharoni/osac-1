@@ -9,7 +9,7 @@ import AttachExternalIpModal from './AttachExternalIpModal';
 import type { MockTransportOverrides } from '../../../test-utils/createMockConnectTransport';
 import { renderWithProviders } from '../../../test-utils/TestProviders';
 
-const vm = { id: 'vm-1', metadata: { name: 'test-vm' } } as ComputeInstance;
+const vm = { id: 'vm-1', metadata: { name: 'test-vm', project: 'project-a' } } as ComputeInstance;
 
 const eligibleIp = {
   id: 'eip-1',
@@ -60,6 +60,7 @@ describe('AttachExternalIpModal', () => {
     expect(createRequest?.object?.metadata?.name).toMatch(
       /^eipa-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
     );
+    expect(createRequest?.object?.metadata?.project).toBe('project-a');
     expect(createRequest?.object?.spec?.target.case).toBe('computeInstance');
     expect(createRequest?.object?.spec?.target.value?.id).toBe('vm-1');
     await waitFor(() => {

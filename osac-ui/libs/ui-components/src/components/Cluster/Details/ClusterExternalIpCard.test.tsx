@@ -155,6 +155,40 @@ describe('ClusterExternalIpCard', () => {
     ).toBeDisabled();
   });
 
+  it('disables endpoint actions until the cluster and endpoint are ready', () => {
+    const cluster = create(ClusterSchema, {
+      id: 'cl-1',
+      status: {
+        state: ClusterState.PROGRESSING,
+      },
+    });
+    mockUseExternalIPAttachments();
+
+    render(<ClusterExternalIpCard cluster={cluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
+
+    screen
+      .getAllByRole('button', { name: 'Attach External IP' })
+      .forEach((button) => expect(button).toBeDisabled());
+  });
+
+  it('disables only the endpoint whose address is not available', () => {
+    const cluster = create(ClusterSchema, {
+      id: 'cl-1',
+      status: {
+        state: ClusterState.READY,
+        apiEndpoint: '',
+        ingressEndpoint: 'apps.example.com',
+      },
+    });
+    mockUseExternalIPAttachments();
+
+    render(<ClusterExternalIpCard cluster={cluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
+
+    const buttons = screen.getAllByRole('button', { name: 'Attach External IP' });
+    expect(buttons[0]).toBeDisabled();
+    expect(buttons[1]).toBeEnabled();
+  });
+
   it('shows auto attachment progress and disables attach while auto-provisioned endpoints are pending', () => {
     const autoCluster = create(ClusterSchema, {
       id: 'cl-1',

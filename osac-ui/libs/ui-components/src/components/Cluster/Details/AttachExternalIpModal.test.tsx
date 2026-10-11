@@ -26,14 +26,21 @@ const eligibleIp = {
 const renderModal = ({
   endpoint = ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
   onClose = vi.fn(),
+  project = 'project-a',
   transportOverrides,
 }: {
   endpoint?: ExternalIPAttachmentEndpoint;
   onClose?: () => void;
+  project?: string;
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
   renderWithProviders(
-    <AttachExternalIpModal clusterId="cluster-1" endpoint={endpoint} onClose={onClose} />,
+    <AttachExternalIpModal
+      clusterId="cluster-1"
+      project={project}
+      endpoint={endpoint}
+      onClose={onClose}
+    />,
     { apiFixtures: { externalIps: [eligibleIp] }, transportOverrides },
   );
 
@@ -68,6 +75,7 @@ describe('AttachExternalIpModal', () => {
       ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS,
     );
     expect(createRequest?.object?.metadata?.name).toMatch(/^eipa-/);
+    expect(createRequest?.object?.metadata?.project).toBe('project-a');
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 });

@@ -9,11 +9,17 @@ import ExternalIpAttachModal from '../../ExternalIp/AttachExternalIpModal';
 
 export interface AttachExternalIpModalProps {
   clusterId: string;
+  project: string;
   endpoint: ExternalIPAttachmentEndpoint;
   onClose: () => void;
 }
 
-const AttachExternalIpModal = ({ clusterId, endpoint, onClose }: AttachExternalIpModalProps) => {
+const AttachExternalIpModal = ({
+  clusterId,
+  project,
+  endpoint,
+  onClose,
+}: AttachExternalIpModalProps) => {
   const { t } = useTranslation();
   const createAttachment = useCreateExternalIPAttachment();
   const title =
@@ -25,10 +31,11 @@ const AttachExternalIpModal = ({ clusterId, endpoint, onClose }: AttachExternalI
     <ExternalIpAttachModal
       title={title}
       emptyDescription={t('Create an external IP first, then attach it to this cluster endpoint.')}
+      project={project}
       onAttach={(externalIpId) =>
         createAttachment.mutateAsync({
           object: {
-            metadata: { name: generateExternalIpAttachmentName() },
+            metadata: { name: generateExternalIpAttachmentName(), project },
             spec: {
               externalIp: { id: externalIpId },
               target: { case: 'cluster', value: { id: clusterId } },

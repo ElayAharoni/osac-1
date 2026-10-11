@@ -119,7 +119,9 @@ const EndpointRow = ({
     autoAttachmentRequested &&
     (isAttachmentBusyState(attachmentState) ||
       attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED);
-  const isActionDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
+  const isEndpointReady = clusterState === ClusterState.READY && Boolean(endpointValue?.trim());
+  const isAttachDisabled = !isEndpointReady || isAttachmentInProgress || isAutoAttachmentInProgress;
+  const isDetachDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
   const autoAttachmentLabel = isReady ? t('Auto attached') : t('Auto attaching in progress');
   const attachmentContent =
     attachment === undefined ? null : isReady ? (
@@ -149,7 +151,7 @@ const EndpointRow = ({
       variant="link"
       isInline
       aria-label={detachAriaLabel}
-      isDisabled={isActionDisabled}
+      isDisabled={isDetachDisabled}
       onClick={() => onDetach(attachment)}
     >
       {t('Detach')}
@@ -159,7 +161,7 @@ const EndpointRow = ({
       variant="link"
       isInline
       aria-label={t('Attach External IP')}
-      isDisabled={isActionDisabled}
+      isDisabled={isAttachDisabled}
       onClick={() => onAttach(endpoint)}
     >
       {t('Attach External IP')}

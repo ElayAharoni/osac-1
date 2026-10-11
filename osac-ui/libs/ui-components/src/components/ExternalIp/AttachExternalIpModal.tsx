@@ -19,6 +19,7 @@ import {
 export interface ExternalIpAttachModalProps {
   title: string;
   emptyDescription: string;
+  project?: string;
   onAttach: (externalIpId: string) => Promise<unknown>;
   onClose: () => void;
 }
@@ -37,6 +38,7 @@ const validationSchema = (t: TFunction) =>
 const ExternalIpAttachModal = ({
   title,
   emptyDescription,
+  project,
   onAttach,
   onClose,
 }: ExternalIpAttachModalProps) => {
@@ -75,7 +77,7 @@ const ExternalIpAttachModal = ({
                 label={t('External IP')}
                 fieldId="attach-external-ip"
                 service={ExternalIPs}
-                request={{ filter: unallocatedExternalIpFilter() }}
+                request={{ filter: unallocatedExternalIpFilter(project) }}
                 isRequired
                 autoSelectSingleOption
                 placeholder={t('Select an external IP')}
