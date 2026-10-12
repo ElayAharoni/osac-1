@@ -5,7 +5,6 @@ import {
   CardBody,
   CardHeader,
   CardTitle,
-  Content,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -13,7 +12,6 @@ import {
   Divider,
   Flex,
   FlexItem,
-  Label,
   Spinner,
 } from '@patternfly/react-core';
 
@@ -22,10 +20,12 @@ import {
   ClusterState,
   ExternalIPAttachmentEndpoint,
   ExternalIPAttachmentState,
+  ExternalIPAttachments,
 } from '@osac/types';
 import type { ExternalIPAttachment } from '@osac/types';
 
-import { useExternalIPAttachments } from '../../../api/v1/external-ip';
+import ClusterExternalIpAttachmentStatusLabel from './ClusterExternalIpAttachmentStatusLabel';
+import { useListResource } from '../../../api/use-resource';
 import { clusterAttachmentFilter } from '../../../api/v1/external-ip-data';
 import { useTranslation } from '../../../hooks/useTranslation';
 import QueryErrorState from '../../Resource/QueryErrorState';
@@ -60,22 +60,6 @@ export interface ClusterExternalIpCardProps {
   onDetach: (attachment: ExternalIPAttachment) => void;
 }
 
-const attachmentStateLabel = (
-  state: ExternalIPAttachmentState | undefined,
-  t: (key: string) => string,
-): string => {
-  switch (state) {
-    case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_PENDING:
-      return t('Attaching');
-    case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED:
-      return t('Failed');
-    case ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING:
-      return t('Detaching');
-    default:
-      return t('External IP attachment pending');
-  }
-};
-
 const isAttachmentBusyState = (state: ExternalIPAttachmentState | undefined): boolean =>
   state === undefined ||
   state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_UNSPECIFIED ||
@@ -83,7 +67,6 @@ const isAttachmentBusyState = (state: ExternalIPAttachmentState | undefined): bo
   state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_DELETING;
 
 interface EndpointRowProps {
-  autoAttachmentRequested: boolean;
   cluster: Cluster;
   endpoint: ExternalIPAttachmentEndpoint;
   endpointValue?: string;
@@ -94,56 +77,7 @@ interface EndpointRowProps {
   onDetach: (attachment: ExternalIPAttachment) => void;
 }
 
-interface AttachmentStatusProps {
-  attachment: ExternalIPAttachment;
-  autoAttachmentRequested: boolean;
-}
-
-const AttachmentStatus = ({ attachment, autoAttachmentRequested }: AttachmentStatusProps) => {
-  const { t } = useTranslation();
-  const state = attachment.status?.state;
-
-  if (state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY) {
-    if (autoAttachmentRequested) {
-      return null;
-    }
-    return (
-      <FlexItem>
-        <Label color="green" isCompact>
-          {t('Attached')}
-        </Label>
-      </FlexItem>
-    );
-  }
-
-  if (autoAttachmentRequested) {
-    return attachment.status?.message ? (
-      <FlexItem>
-        <Content component="p">{attachment.status.message}</Content>
-      </FlexItem>
-    ) : null;
-  }
-
-  return (
-    <FlexItem>
-      <Content component="p">
-        <Label
-          color={
-            state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED
-              ? 'red'
-              : 'orange'
-          }
-        >
-          {attachmentStateLabel(state, t)}
-        </Label>
-        {attachment.status?.message ? ` ${attachment.status.message}` : null}
-      </Content>
-    </FlexItem>
-  );
-};
-
 const EndpointRow = ({
-  autoAttachmentRequested,
   cluster,
   endpoint,
   endpointValue,
@@ -155,10 +89,10 @@ const EndpointRow = ({
 }: EndpointRowProps) => {
   const { t } = useTranslation();
   const clusterState = cluster.status?.state;
+  const autoAttachmentRequested = cluster.spec?.autoExternalIpAttachment === true;
   const endpointText =
     endpointValue || (clusterState === ClusterState.PROGRESSING ? t('Awaiting provisioning') : '—');
   const attachmentState = attachment?.status?.state;
-  const isReady = attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY;
   const isAttachmentInProgress = attachment !== undefined && isAttachmentBusyState(attachmentState);
   const isAutoAttachmentInProgress =
     autoAttachmentRequested &&
@@ -167,7 +101,6 @@ const EndpointRow = ({
   const isEndpointReady = clusterState === ClusterState.READY && Boolean(endpointValue);
   const isAttachDisabled = !isEndpointReady || isAttachmentInProgress || isAutoAttachmentInProgress;
   const isDetachDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
-  const autoAttachmentLabel = isReady ? t('Auto attached') : t('Auto attaching in progress');
   const actionButton = attachment ? (
     <Button
       variant="link"
@@ -201,19 +134,10 @@ const EndpointRow = ({
               spaceItems={{ default: 'spaceItemsSm' }}
             >
               <FlexItem>{endpointText}</FlexItem>
-              {autoAttachmentRequested && (
-                <FlexItem>
-                  <Label color="blue" isCompact>
-                    {autoAttachmentLabel}
-                  </Label>
-                </FlexItem>
-              )}
-              {attachment && (
-                <AttachmentStatus
-                  attachment={attachment}
-                  autoAttachmentRequested={autoAttachmentRequested}
-                />
-              )}
+              <ClusterExternalIpAttachmentStatusLabel
+                attachment={attachment}
+                autoAttachmentRequested={autoAttachmentRequested}
+              />
             </Flex>
           </FlexItem>
           <FlexItem>{actionButton}</FlexItem>
@@ -226,15 +150,16 @@ const EndpointRow = ({
 const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalIpCardProps) => {
   const { t } = useTranslation();
   const {
-    data: attachments = [],
+    data: attachmentResponse,
     isLoading,
     error,
-  } = useExternalIPAttachments(
+  } = useListResource(
+    ExternalIPAttachments,
     { filter: clusterAttachmentFilter(cluster.id) },
     { enabled: Boolean(cluster.id) },
   );
+  const attachments = attachmentResponse?.items ?? [];
   const grouped = groupAttachmentsByEndpoint(attachments);
-  const autoAttachmentRequested = cluster.spec?.autoExternalIpAttachment === true;
   const endpointRows = [
     {
       endpoint: ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
@@ -270,7 +195,6 @@ const ClusterExternalIpCard = ({ cluster, onAttach, onDetach }: ClusterExternalI
             {endpointRows.map((row) => (
               <EndpointRow
                 key={row.endpoint}
-                autoAttachmentRequested={autoAttachmentRequested}
                 cluster={cluster}
                 {...row}
                 onAttach={onAttach}

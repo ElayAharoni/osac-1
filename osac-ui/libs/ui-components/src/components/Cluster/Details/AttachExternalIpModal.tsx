@@ -1,8 +1,6 @@
 import { ExternalIPAttachmentEndpoint, ExternalIPAttachments, ExternalIPs } from '@osac/types';
 import type { Cluster } from '@osac/types';
 
-import { apiQueryKey } from '../../../api/types';
-import { useApiQueryClient } from '../../../api/use-api-query';
 import { useCreateResource, useInvalidateServiceQueries } from '../../../api/use-resource';
 import { useTranslation } from '../../../hooks/useTranslation';
 import ExternalIpAttachModal from '../../ExternalIp/AttachExternalIpModal';
@@ -15,15 +13,9 @@ export interface AttachExternalIpModalProps {
 
 const AttachExternalIpModal = ({ cluster, endpoint, onClose }: AttachExternalIpModalProps) => {
   const { t } = useTranslation();
-  const queryClient = useApiQueryClient();
   const invalidateService = useInvalidateServiceQueries();
   const createAttachment = useCreateResource(ExternalIPAttachments, {
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
-        invalidateService(ExternalIPs),
-      ]);
-    },
+    onSuccess: async () => invalidateService(ExternalIPs),
   });
   const project = cluster.metadata?.project ?? '';
   const title =

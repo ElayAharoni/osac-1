@@ -8,31 +8,33 @@ import {
   ClusterState,
   ExternalIPAttachmentEndpoint,
   ExternalIPAttachmentState,
+  ExternalIPAttachments,
 } from '@osac/types';
-import type { ExternalIPAttachment } from '@osac/types';
+import type { ExternalIPAttachment, ExternalIPAttachmentsListResponse } from '@osac/types';
 
 import ClusterExternalIpCard, { groupAttachmentsByEndpoint } from './ClusterExternalIpCard';
-import * as externalIpModule from '../../../api/v1/external-ip';
+import * as resourceModule from '../../../api/use-resource';
 
-vi.mock('../../../api/v1/external-ip', () => ({
-  useExternalIPAttachments: vi.fn(),
-}));
+vi.mock('../../../api/use-resource', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../api/use-resource')>();
+  return { ...actual, useListResource: vi.fn() };
+});
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-const mockUseExternalIPAttachments = (
+const mockUseAttachmentList = (
   attachments: ExternalIPAttachment[] = [],
   overrides: Record<string, unknown> = {},
 ) => {
-  vi.mocked(externalIpModule.useExternalIPAttachments).mockReturnValue({
-    data: attachments,
+  vi.mocked(resourceModule.useListResource).mockReturnValue({
+    data: { items: attachments } as ExternalIPAttachmentsListResponse,
     isLoading: false,
     isFetching: false,
     error: null,
     ...overrides,
-  } as unknown as ReturnType<typeof externalIpModule.useExternalIPAttachments>);
+  } as unknown as ReturnType<typeof resourceModule.useListResource>);
 };
 
 const makeAttachment = (
@@ -103,7 +105,7 @@ describe('ClusterExternalIpCard', () => {
   it('renders both endpoint URLs and independent attach actions without empty-state text', () => {
     const onAttach = vi.fn();
     const onDetach = vi.fn();
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     const { container } = render(
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
@@ -126,7 +128,7 @@ describe('ClusterExternalIpCard', () => {
         ingressEndpoint: 'apps.example.com',
       },
     });
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     render(<ClusterExternalIpCard cluster={cluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -144,7 +146,7 @@ describe('ClusterExternalIpCard', () => {
     );
     const onAttach = vi.fn();
     const onDetach = vi.fn();
-    mockUseExternalIPAttachments([attachment]);
+    mockUseAttachmentList([attachment]);
 
     render(
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
@@ -166,7 +168,7 @@ describe('ClusterExternalIpCard', () => {
       '',
       ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_PENDING,
     );
-    mockUseExternalIPAttachments([attachment]);
+    mockUseAttachmentList([attachment]);
 
     render(<ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -182,7 +184,7 @@ describe('ClusterExternalIpCard', () => {
         state: ClusterState.PROGRESSING,
       },
     });
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     render(<ClusterExternalIpCard cluster={cluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -200,7 +202,7 @@ describe('ClusterExternalIpCard', () => {
         ingressEndpoint: 'apps.example.com',
       },
     });
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     render(<ClusterExternalIpCard cluster={cluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -219,7 +221,7 @@ describe('ClusterExternalIpCard', () => {
         ingressEndpoint: 'apps.example.com',
       },
     });
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -251,7 +253,7 @@ describe('ClusterExternalIpCard', () => {
         ingressEndpoint: 'apps.example.com',
       },
     });
-    mockUseExternalIPAttachments([pendingApiAttachment, deletingIngressAttachment]);
+    mockUseAttachmentList([pendingApiAttachment, deletingIngressAttachment]);
 
     render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -274,7 +276,7 @@ describe('ClusterExternalIpCard', () => {
         ingressEndpoint: 'apps.example.com',
       },
     });
-    mockUseExternalIPAttachments([attachment]);
+    mockUseAttachmentList([attachment]);
 
     render(<ClusterExternalIpCard cluster={autoCluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -286,7 +288,7 @@ describe('ClusterExternalIpCard', () => {
     const onAttach = vi.fn();
     const onDetach = vi.fn();
     const user = userEvent.setup();
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     const { rerender } = render(
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
@@ -301,7 +303,7 @@ describe('ClusterExternalIpCard', () => {
       ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
       '203.0.113.10',
     );
-    mockUseExternalIPAttachments([attachment]);
+    mockUseAttachmentList([attachment]);
     rerender(
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={onAttach} onDetach={onDetach} />,
     );
@@ -317,7 +319,7 @@ describe('ClusterExternalIpCard', () => {
       ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED,
       'IP was already consumed',
     );
-    mockUseExternalIPAttachments([attachment]);
+    mockUseAttachmentList([attachment]);
 
     render(<ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
@@ -329,25 +331,26 @@ describe('ClusterExternalIpCard', () => {
   });
 
   it('loads attachments once with the cluster filter', () => {
-    mockUseExternalIPAttachments();
+    mockUseAttachmentList();
 
     render(<ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />);
 
-    expect(externalIpModule.useExternalIPAttachments).toHaveBeenCalledTimes(1);
-    expect(externalIpModule.useExternalIPAttachments).toHaveBeenCalledWith(
+    expect(resourceModule.useListResource).toHaveBeenCalledTimes(1);
+    expect(resourceModule.useListResource).toHaveBeenCalledWith(
+      ExternalIPAttachments,
       { filter: 'this.spec.cluster.id == "cl-1"' },
       { enabled: true },
     );
   });
 
   it('uses the NAT gateway card loading and error states', () => {
-    mockUseExternalIPAttachments([], { isLoading: true });
+    mockUseAttachmentList([], { isLoading: true });
     const { rerender } = render(
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />,
     );
     expect(screen.getByLabelText('Loading external IP attachments')).toBeInTheDocument();
 
-    mockUseExternalIPAttachments([], { isLoading: false, error: new Error('Network error') });
+    mockUseAttachmentList([], { isLoading: false, error: new Error('Network error') });
     rerender(
       <ClusterExternalIpCard cluster={makeCluster()} onAttach={vi.fn()} onDetach={vi.fn()} />,
     );
