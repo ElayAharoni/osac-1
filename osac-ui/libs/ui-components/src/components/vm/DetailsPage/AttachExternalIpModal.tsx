@@ -1,9 +1,9 @@
+import { ExternalIPAttachments, ExternalIPs } from '@osac/types';
 import type { ComputeInstance } from '@osac/types';
 
-import {
-  generateExternalIpAttachmentName,
-  useCreateExternalIPAttachment,
-} from '../../../api/v1/external-ip';
+import { apiQueryKey } from '../../../api/types';
+import { useApiQueryClient } from '../../../api/use-api-query';
+import { useCreateResource, useInvalidateServiceQueries } from '../../../api/use-resource';
 import { useTranslation } from '../../../hooks/useTranslation';
 import ExternalIpAttachModal from '../../ExternalIp/AttachExternalIpModal';
 
@@ -14,19 +14,29 @@ interface AttachExternalIpModalProps {
 
 const AttachExternalIpModal = ({ vm, onClose }: AttachExternalIpModalProps) => {
   const { t } = useTranslation();
-  const createAttachment = useCreateExternalIPAttachment();
+  const queryClient = useApiQueryClient();
+  const invalidateService = useInvalidateServiceQueries();
+  const createAttachment = useCreateResource(ExternalIPAttachments, {
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
+        invalidateService(ExternalIPs),
+      ]);
+    },
+  });
+  const project = vm.metadata?.project ?? '';
 
   return (
     <ExternalIpAttachModal
       title={t('Attach external IP')}
       emptyDescription={t('Create an external IP first, then attach it to this virtual machine.')}
-      project={vm.metadata?.project ?? ''}
+      project={project}
       onAttach={(externalIpId) =>
         createAttachment.mutateAsync({
           object: {
             metadata: {
-              name: generateExternalIpAttachmentName(),
-              project: vm.metadata?.project ?? '',
+              name: `eipa-${crypto.randomUUID()}`,
+              project,
             },
             spec: {
               externalIp: { id: externalIpId },

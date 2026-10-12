@@ -94,6 +94,54 @@ interface EndpointRowProps {
   onDetach: (attachment: ExternalIPAttachment) => void;
 }
 
+interface AttachmentStatusProps {
+  attachment: ExternalIPAttachment;
+  autoAttachmentRequested: boolean;
+}
+
+const AttachmentStatus = ({ attachment, autoAttachmentRequested }: AttachmentStatusProps) => {
+  const { t } = useTranslation();
+  const state = attachment.status?.state;
+
+  if (state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY) {
+    if (autoAttachmentRequested) {
+      return null;
+    }
+    return (
+      <FlexItem>
+        <Label color="green" isCompact>
+          {t('Attached')}
+        </Label>
+      </FlexItem>
+    );
+  }
+
+  if (autoAttachmentRequested) {
+    return attachment.status?.message ? (
+      <FlexItem>
+        <Content component="p">{attachment.status.message}</Content>
+      </FlexItem>
+    ) : null;
+  }
+
+  return (
+    <FlexItem>
+      <Content component="p">
+        <Label
+          color={
+            state === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED
+              ? 'red'
+              : 'orange'
+          }
+        >
+          {attachmentStateLabel(state, t)}
+        </Label>
+        {attachment.status?.message ? ` ${attachment.status.message}` : null}
+      </Content>
+    </FlexItem>
+  );
+};
+
 const EndpointRow = ({
   autoAttachmentRequested,
   cluster,
@@ -107,11 +155,8 @@ const EndpointRow = ({
 }: EndpointRowProps) => {
   const { t } = useTranslation();
   const clusterState = cluster.status?.state;
-  const endpointText = endpointValue?.trim()
-    ? endpointValue.trim()
-    : clusterState === ClusterState.PROGRESSING
-      ? t('Awaiting provisioning')
-      : '—';
+  const endpointText =
+    endpointValue || (clusterState === ClusterState.PROGRESSING ? t('Awaiting provisioning') : '—');
   const attachmentState = attachment?.status?.state;
   const isReady = attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_READY;
   const isAttachmentInProgress = attachment !== undefined && isAttachmentBusyState(attachmentState);
@@ -119,33 +164,10 @@ const EndpointRow = ({
     autoAttachmentRequested &&
     (isAttachmentBusyState(attachmentState) ||
       attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED);
-  const isEndpointReady = clusterState === ClusterState.READY && Boolean(endpointValue?.trim());
+  const isEndpointReady = clusterState === ClusterState.READY && Boolean(endpointValue);
   const isAttachDisabled = !isEndpointReady || isAttachmentInProgress || isAutoAttachmentInProgress;
   const isDetachDisabled = isAttachmentInProgress || isAutoAttachmentInProgress;
   const autoAttachmentLabel = isReady ? t('Auto attached') : t('Auto attaching in progress');
-  const attachmentContent =
-    attachment === undefined ? null : isReady ? (
-      !autoAttachmentRequested && (
-        <Label color="green" isCompact>
-          {t('Attached')}
-        </Label>
-      )
-    ) : !autoAttachmentRequested ? (
-      <Content component="p">
-        <Label
-          color={
-            attachmentState === ExternalIPAttachmentState.EXTERNAL_IP_ATTACHMENT_STATE_FAILED
-              ? 'red'
-              : 'orange'
-          }
-        >
-          {attachmentStateLabel(attachmentState, t)}
-        </Label>
-        {attachment.status?.message ? ` ${attachment.status.message}` : null}
-      </Content>
-    ) : attachment.status?.message ? (
-      <Content component="p">{attachment.status.message}</Content>
-    ) : null;
   const actionButton = attachment ? (
     <Button
       variant="link"
@@ -186,7 +208,12 @@ const EndpointRow = ({
                   </Label>
                 </FlexItem>
               )}
-              {attachmentContent && <FlexItem>{attachmentContent}</FlexItem>}
+              {attachment && (
+                <AttachmentStatus
+                  attachment={attachment}
+                  autoAttachmentRequested={autoAttachmentRequested}
+                />
+              )}
             </Flex>
           </FlexItem>
           <FlexItem>{actionButton}</FlexItem>

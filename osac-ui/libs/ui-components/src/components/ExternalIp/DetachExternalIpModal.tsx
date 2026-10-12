@@ -1,27 +1,34 @@
 import type { ReactNode } from 'react';
 
+import { ExternalIPAttachments, ExternalIPs } from '@osac/types';
 import type { ExternalIPAttachment } from '@osac/types';
 
-import { useDeleteExternalIPAttachment } from '../../api/v1/external-ip';
+import { apiQueryKey } from '../../api/types';
+import { useApiQueryClient } from '../../api/use-api-query';
+import { useDeleteResource, useInvalidateServiceQueries } from '../../api/use-resource';
 import { useTranslation } from '../../hooks/useTranslation';
 import DeleteResourceModal from '../Resource/DeleteResourceModal';
 
 export interface ExternalIpDetachModalProps {
   attachment: ExternalIPAttachment;
-  externalIpAddress?: string;
   label: ReactNode;
   onClose: () => void;
 }
 
-const ExternalIpDetachModal = ({
-  attachment,
-  externalIpAddress,
-  label,
-  onClose,
-}: ExternalIpDetachModalProps) => {
+const ExternalIpDetachModal = ({ attachment, label, onClose }: ExternalIpDetachModalProps) => {
   const { t } = useTranslation();
-  const deleteAttachment = useDeleteExternalIPAttachment();
-  const resourceName = externalIpAddress || attachment.spec?.externalIp?.id || attachment.id;
+  const queryClient = useApiQueryClient();
+  const invalidateService = useInvalidateServiceQueries();
+  const deleteAttachment = useDeleteResource(ExternalIPAttachments, {
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
+        invalidateService(ExternalIPs),
+      ]);
+    },
+  });
+  const resourceName =
+    attachment.status?.externalIpAddress || attachment.spec?.externalIp?.id || attachment.id;
 
   return (
     <DeleteResourceModal

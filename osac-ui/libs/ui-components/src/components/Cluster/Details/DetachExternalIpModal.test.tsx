@@ -20,27 +20,22 @@ const attachment = {
     target: { case: 'cluster', value: { id: 'cluster-1' } },
     targetEndpoint: ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
   },
+  status: { externalIpAddress: '203.0.113.10' },
 } as unknown as ExternalIPAttachment;
 
 const renderModal = ({
+  attachment: attachmentOverride = attachment,
   onClose = vi.fn(),
   transportOverrides,
 }: {
+  attachment?: ExternalIPAttachment;
   onClose?: () => void;
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
-  renderWithProviders(
-    <DetachExternalIpModal
-      attachment={attachment}
-      externalIpAddress="203.0.113.10"
-      endpoint={ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API}
-      onClose={onClose}
-    />,
-    {
-      apiFixtures: { externalIpAttachments: [attachment] },
-      transportOverrides,
-    },
-  );
+  renderWithProviders(<DetachExternalIpModal attachment={attachmentOverride} onClose={onClose} />, {
+    apiFixtures: { externalIpAttachments: [attachmentOverride] },
+    transportOverrides,
+  });
 
 describe('DetachExternalIpModal', () => {
   it('confirms deletion of the endpoint attachment by id', async () => {
@@ -92,5 +87,20 @@ describe('DetachExternalIpModal', () => {
 
     await waitFor(() => expect(attempt).toBe(2));
     await waitFor(() => expect(onClose).toHaveBeenCalled());
+  });
+
+  it('allows detaching when the attachment endpoint is unspecified', () => {
+    const unspecifiedAttachment = {
+      ...attachment,
+      spec: {
+        ...attachment.spec,
+        targetEndpoint: ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_UNSPECIFIED,
+      },
+    } as unknown as ExternalIPAttachment;
+
+    renderModal({ attachment: unspecifiedAttachment });
+
+    expect(screen.getByText('This detaches the external IP from the cluster.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeEnabled();
   });
 });

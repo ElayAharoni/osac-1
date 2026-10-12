@@ -1,27 +1,31 @@
-import { ExternalIPAttachmentEndpoint } from '@osac/types';
+import { ExternalIPAttachmentEndpoint, ExternalIPAttachments, ExternalIPs } from '@osac/types';
+import type { Cluster } from '@osac/types';
 
-import {
-  generateExternalIpAttachmentName,
-  useCreateExternalIPAttachment,
-} from '../../../api/v1/external-ip';
+import { apiQueryKey } from '../../../api/types';
+import { useApiQueryClient } from '../../../api/use-api-query';
+import { useCreateResource, useInvalidateServiceQueries } from '../../../api/use-resource';
 import { useTranslation } from '../../../hooks/useTranslation';
 import ExternalIpAttachModal from '../../ExternalIp/AttachExternalIpModal';
 
 export interface AttachExternalIpModalProps {
-  clusterId: string;
-  project: string;
+  cluster: Cluster;
   endpoint: ExternalIPAttachmentEndpoint;
   onClose: () => void;
 }
 
-const AttachExternalIpModal = ({
-  clusterId,
-  project,
-  endpoint,
-  onClose,
-}: AttachExternalIpModalProps) => {
+const AttachExternalIpModal = ({ cluster, endpoint, onClose }: AttachExternalIpModalProps) => {
   const { t } = useTranslation();
-  const createAttachment = useCreateExternalIPAttachment();
+  const queryClient = useApiQueryClient();
+  const invalidateService = useInvalidateServiceQueries();
+  const createAttachment = useCreateResource(ExternalIPAttachments, {
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: apiQueryKey('v1/external_ip_attachments') }),
+        invalidateService(ExternalIPs),
+      ]);
+    },
+  });
+  const project = cluster.metadata?.project ?? '';
   const title =
     endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
       ? t('Attach external IP to API endpoint')
@@ -35,10 +39,10 @@ const AttachExternalIpModal = ({
       onAttach={(externalIpId) =>
         createAttachment.mutateAsync({
           object: {
-            metadata: { name: generateExternalIpAttachmentName(), project },
+            metadata: { name: `eipa-${crypto.randomUUID()}`, project },
             spec: {
               externalIp: { id: externalIpId },
-              target: { case: 'cluster', value: { id: clusterId } },
+              target: { case: 'cluster', value: { id: cluster.id } },
               targetEndpoint: endpoint,
             },
           },

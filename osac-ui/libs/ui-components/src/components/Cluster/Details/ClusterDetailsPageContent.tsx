@@ -47,7 +47,6 @@ const ClusterDetailsPageContent = ({ cluster }: ClusterDetailViewProps) => {
   const [activeTabKey, setActiveTabKey] = useState(0);
   const [attachEndpoint, setAttachEndpoint] = useState<ExternalIPAttachmentEndpoint | undefined>();
   const [detachAttachment, setDetachAttachment] = useState<ExternalIPAttachment>();
-  const detachEndpoint = detachAttachment?.spec?.targetEndpoint;
 
   const handleTabSelect = (_event: SyntheticEvent, tabIndex: string | number) => {
     setActiveTabKey(Number(tabIndex));
@@ -168,23 +167,17 @@ const ClusterDetailsPageContent = ({ cluster }: ClusterDetailViewProps) => {
 
       {attachEndpoint !== undefined && (
         <AttachExternalIpModal
-          clusterId={cluster.id}
-          project={cluster.metadata?.project ?? ''}
+          cluster={cluster}
           endpoint={attachEndpoint}
           onClose={() => setAttachEndpoint(undefined)}
         />
       )}
-      {detachAttachment &&
-        (detachEndpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API ||
-          detachEndpoint ===
-            ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS) && (
-          <DetachExternalIpModal
-            attachment={detachAttachment}
-            externalIpAddress={detachAttachment.status?.externalIpAddress}
-            endpoint={detachEndpoint}
-            onClose={() => setDetachAttachment(undefined)}
-          />
-        )}
+      {detachAttachment && (
+        <DetachExternalIpModal
+          attachment={detachAttachment}
+          onClose={() => setDetachAttachment(undefined)}
+        />
+      )}
     </>
   );
 };

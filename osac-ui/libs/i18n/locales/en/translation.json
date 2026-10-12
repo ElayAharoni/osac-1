@@ -880,6 +880,7 @@
   "The Virtual Machine service is not enabled on this server.": "The Virtual Machine service is not enabled on this server.",
   "This console is already open in another tab in this browser. Take over to continue here, or switch to that tab.": "This console is already open in another tab in this browser. Take over to continue here, or switch to that tab.",
   "This detaches the external IP from the API endpoint.": "This detaches the external IP from the API endpoint.",
+  "This detaches the external IP from the cluster.": "This detaches the external IP from the cluster.",
   "This detaches the external IP from the Ingress endpoint.": "This detaches the external IP from the Ingress endpoint.",
   "This detaches the external IP from the virtual machine.": "This detaches the external IP from the virtual machine.",
   "This external IP is being deleted.": "This external IP is being deleted.",

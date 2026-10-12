@@ -117,6 +117,26 @@ describe('ClusterExternalIpCard', () => {
     expect(screen.getAllByRole('button', { name: 'Attach External IP' })).toHaveLength(2);
   });
 
+  it('displays endpoint values without trimming them', () => {
+    const cluster = create(ClusterSchema, {
+      id: 'cl-1',
+      status: {
+        state: ClusterState.READY,
+        apiEndpoint: '  api.example.com  ',
+        ingressEndpoint: 'apps.example.com',
+      },
+    });
+    mockUseExternalIPAttachments();
+
+    render(<ClusterExternalIpCard cluster={cluster} onAttach={vi.fn()} onDetach={vi.fn()} />);
+
+    expect(
+      screen
+        .getAllByText((_, element) => element?.textContent === '  api.example.com  ')
+        .some((element) => element.childElementCount === 0),
+    ).toBe(true);
+  });
+
   it('shows the attached address and detach action only for the occupied endpoint', () => {
     const attachment = makeAttachment(
       ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,

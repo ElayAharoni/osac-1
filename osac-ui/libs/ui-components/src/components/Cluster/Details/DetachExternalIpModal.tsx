@@ -6,31 +6,25 @@ import ExternalIpDetachModal from '../../ExternalIp/DetachExternalIpModal';
 
 export interface DetachExternalIpModalProps {
   attachment: ExternalIPAttachment;
-  externalIpAddress?: string;
-  endpoint: ExternalIPAttachmentEndpoint;
   onClose: () => void;
 }
 
-const DetachExternalIpModal = ({
-  attachment,
-  externalIpAddress,
-  endpoint,
-  onClose,
-}: DetachExternalIpModalProps) => {
+const DetachExternalIpModal = ({ attachment, onClose }: DetachExternalIpModalProps) => {
   const { t } = useTranslation();
-  const label =
-    endpoint === ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API
-      ? t('This detaches the external IP from the API endpoint.')
-      : t('This detaches the external IP from the Ingress endpoint.');
+  const endpoint = attachment.spec?.targetEndpoint;
+  let label: string;
+  switch (endpoint) {
+    case ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API:
+      label = t('This detaches the external IP from the API endpoint.');
+      break;
+    case ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_INGRESS:
+      label = t('This detaches the external IP from the Ingress endpoint.');
+      break;
+    default:
+      label = t('This detaches the external IP from the cluster.');
+  }
 
-  return (
-    <ExternalIpDetachModal
-      attachment={attachment}
-      externalIpAddress={externalIpAddress}
-      label={label}
-      onClose={onClose}
-    />
-  );
+  return <ExternalIpDetachModal attachment={attachment} label={label} onClose={onClose} />;
 };
 
 export default DetachExternalIpModal;

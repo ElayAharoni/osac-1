@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ExternalIP, ExternalIPAttachmentsCreateRequest } from '@osac/types';
 import {
+  ClusterSchema,
   ExternalIPAttachmentEndpoint,
   ExternalIPAttachmentsCreateResponseSchema,
   ExternalIPState,
@@ -23,24 +24,22 @@ const eligibleIp = {
   },
 } as ExternalIP;
 
+const cluster = create(ClusterSchema, {
+  id: 'cluster-1',
+  metadata: { project: 'project-a' },
+});
+
 const renderModal = ({
   endpoint = ExternalIPAttachmentEndpoint.EXTERNAL_IP_ATTACHMENT_ENDPOINT_API,
   onClose = vi.fn(),
-  project = 'project-a',
   transportOverrides,
 }: {
   endpoint?: ExternalIPAttachmentEndpoint;
   onClose?: () => void;
-  project?: string;
   transportOverrides?: MockTransportOverrides;
 } = {}) =>
   renderWithProviders(
-    <AttachExternalIpModal
-      clusterId="cluster-1"
-      project={project}
-      endpoint={endpoint}
-      onClose={onClose}
-    />,
+    <AttachExternalIpModal cluster={cluster} endpoint={endpoint} onClose={onClose} />,
     { apiFixtures: { externalIps: [eligibleIp] }, transportOverrides },
   );
 
